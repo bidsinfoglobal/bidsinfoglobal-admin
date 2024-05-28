@@ -1,6 +1,6 @@
 {
   "name": "bidsinfoglobal-admin",
-  "homepage": "http://bidsinfoglobal.com/dashboard",
+  "homepage": "/",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
