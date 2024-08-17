@@ -110,6 +110,15 @@ export default function Tender() {
 
     const columns = [
         {
+            title: 'Title',
+            dataIndex: 'title',
+            key: 'title',
+            fixed: 'left',
+            width: 170,
+            height: 100,
+            sorter: (a, b) => a.title - b.title
+        },
+        {
             title: 'Authority Name',
             dataIndex: 'authority_name',
             key: 'authority_name',
@@ -501,6 +510,12 @@ function ManagerModel({ id, _tender, submitHandler }) {
                 <div>
                     <form onSubmit={handleSubmit(onSubmit)}>
                       <div className='grid md:grid-cols-2 lg:grid-cols-3 md:gap-3'>
+                        <div className="form-group mb-6">
+                            <label className="font-bold">Title</label>
+                            <span className='text-red-600 md:ml-4'>{errors?.title?.message}</span>
+                            <input type="text" className={inputClass} name="address" {...register("title")}
+                                aria-describedby="title" placeholder="title" defaultValue={_tender?.title || ''} />
+                        </div>
                         <div className="form-group mb-6">
                             <label className="font-bold">Authority Name <span className='text-red-600'>*</span></label>
                             <span className='text-red-600 md:ml-4'>{errors?.authority_name?.message}</span>
