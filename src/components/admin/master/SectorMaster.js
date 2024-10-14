@@ -124,6 +124,12 @@ export default function SectorMaster() {
       sorter: (a, b) => a.name - b.name
     },
     {
+      title: 'Title',
+      dataIndex: 'title',
+      key: 'title',
+      sorter: (a, b) => a.title - b.title
+    },
+    {
       title: 'Description',
       dataIndex: 'description',
       key: 'description',
