@@ -230,6 +230,18 @@ function ManagerModel({ id, _sector, submitHandler }) {
                 aria-describedby="name" placeholder="name" defaultValue={_sector?.name || ''} />
             </div>
             <div className="form-group mb-6">
+              <label className="font-bold">Title <span className='text-red-600'>*</span></label>
+              <span className='text-red-600 md:ml-4'>{errors?.title?.message}</span>
+              <input type="text" className={inputClass} name="title" {...register("title", { required: 'field is required' })}
+                aria-describedby="description" placeholder="title" defaultValue={_sector?.title || ''} />
+            </div>
+            <div className="form-group mb-6">
+              <label className="font-bold">Description <span className='text-red-600'>*</span></label>
+              <span className='text-red-600 md:ml-4'>{errors?.description?.message}</span>
+              <textarea type="text" className={inputClass} name="description" {...register("description", { required: 'field is required' })}
+                aria-describedby="description" placeholder="description" defaultValue={_sector?.description || ''} />
+            </div>
+            <div className="form-group mb-6">
               <label className="font-bold">Icon <span className='text-red-600'>*</span></label>
               <span className='text-red-600 md:ml-4'>{errors?.icon?.message}</span>
               <input type="file" className={inputClass} name="icon" {...register("icon", { required: 'field is required' })}
@@ -241,12 +253,7 @@ function ManagerModel({ id, _sector, submitHandler }) {
               <input type="text" className={inputClass} name="code" {...register("code", { required: 'field is required' })}
                 aria-describedby="code" placeholder="code" defaultValue={_sector?.code || ''} />
             </div>
-            <div className="form-group mb-6">
-              <label className="font-bold">Description <span className='text-red-600'>*</span></label>
-              <span className='text-red-600 md:ml-4'>{errors?.description?.message}</span>
-              <textarea type="text" className={inputClass} name="description" {...register("description", { required: 'field is required' })}
-                aria-describedby="description" placeholder="description" defaultValue={_sector?.description || ''} />
-            </div>
+            
             <div>
               <button type="submit" className="px-4 py-2 rounded shadow hover:bg-gray-200">Submit</button>
             </div>
