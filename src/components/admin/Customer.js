@@ -377,7 +377,7 @@ function ManagerModel({ id, _customer, submitHandler, _plans }) {
               <div className="form-group mb-6">
                 <label className="font-bold">Plan name <span className='text-red-600'>*</span></label>
                 <select name='purchase_plan_id' {...register("purchase_plan_id")} className={inputClass} defaultValue={_customer?.plans?.purchase_plan_id}>
-                  <option value={"668139934ecb1ab2543a5124"}>Free</option>
+                  <option value={"free_plan"} >Free</option>
                   {
                     _plans.map((ob, ke) => {
                       return (
