@@ -135,6 +135,7 @@ export default function Customer() {
       render: (e, record) => (
         <div>
           <p>Plan Name: {record?.plans?.plan_name}</p>
+          <p>Customer Type: {record?.customer_type}</p>
           <p>Expire Date: {moment(record?.plans?.plan_expire_date || new Date()).format('DD-MM-YYYY')}</p>
           <p>{moment(record?.plans?.plan_expire_date).diff(moment(new Date()), 'days', false) <= 0 ? "Plan Expired" : `Expire in ${moment(record?.plans?.plan_expire_date).diff(moment(new Date()), 'days', false)}`}</p>
         </div>
@@ -355,6 +356,17 @@ function ManagerModel({ id, _customer, submitHandler, _plans }) {
                   <span className='text-red-600 md:ml-4'>{errors?.operation?.message}</span>
                   <input type="text" className={inputClass} name="operation" {...register("operation")}
                     aria-describedby="operation" placeholder="operation" defaultValue={_customer?.operation || ''} />
+                </div>
+                <div className="form-group mb-6">
+                  <label className="font-bold">Customer Type <span className='text-red-600'>*</span></label>
+                  <select name='customer_type' {...register("customer_type")} className={inputClass} defaultValue="FG">
+                    <option value="FG">Free Global</option>
+                    <option value="FD">Free Domestic</option>
+                    <option value="SG">Subscribed Global</option>
+                    <option value="sD">Subscribed Domestic</option>
+
+                  </select>
+
                 </div>
               </>}
             </div>
