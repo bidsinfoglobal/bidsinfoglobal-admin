@@ -38,19 +38,19 @@ export default function HomeCMS() {
                 return;
             }
 
-            if(body.category_data.length > 12) {
+            if (body.category_data.length > 12) {
                 setError('category_data', {
                     message: 'max 12 entries allowed'
                 })
                 return
             }
-            if(body.global_tender_data.length > 6) {
+            if (body.global_tender_data.length > 6) {
                 setError('global_tender_data', {
                     message: 'max 6 entries allowed'
                 })
                 return
             }
-            if(body.indian_tender_data.length > 6) {
+            if (body.indian_tender_data.length > 6) {
                 setError('indian_tender_data', {
                     message: 'max 6 entries allowed'
                 })
@@ -61,17 +61,19 @@ export default function HomeCMS() {
                 return {
                     "_id": c.value,
                     "name": entry?.name,
-                    "icon": entry?.icon || ''
-                }        
+                    "icon": entry?.icon || '',
+                    "title": entry?.title,
+                    "description": entry?.description
+                }
             })
 
             body.global_tender_data = body.global_tender_data.map(c => {
                 var entry = tenders.find(s => s._id == c.value);
                 var closing_date = entry?.closing_date ? moment(entry?.closing_date).format('YYYY-MM-DD') : ''
                 var sector_obj = "";
-                if(entry?.sectors) {
+                if (entry?.sectors) {
                     let _sector = sectors.find(s => s.name === entry?.sectors);
-                    if(_sector) {
+                    if (_sector) {
                         sector_obj = {
                             _id: _sector._id,
                             name: _sector.name,
@@ -114,21 +116,21 @@ export default function HomeCMS() {
             var _sectors = await fetchSector({ pageNo: 0, limit: 1000, sortBy: 1, sortField: 'name', keywords: '' })
             var resp = _sectors.data;
             console.log('sector data', resp.result.result)
-            if(resp.success) {
-            setSectors(() => resp.result.result);
+            if (resp.success) {
+                setSectors(() => resp.result.result);
             }
             else {
-            setSectors([]);
+                setSectors([]);
             }
 
-            var _tenders = await fetchTenders({pageNo: 0, limit: 1000, sortBy: 1, sortField: 'authority_name', keywords: ''});
+            var _tenders = await fetchTenders({ pageNo: 0, limit: 1000, sortBy: 1, sortField: 'authority_name', keywords: '' });
             resp = _tenders.data;
             console.log('tender data', resp.result.result)
-            if(resp.success) {
-            setTenders(() => resp.result.result);
+            if (resp.success) {
+                setTenders(() => resp.result.result);
             }
             else {
-            setTenders([]);
+                setTenders([]);
             }
 
             // var response = await FetchCMSByType('home_page&indian=true');
@@ -141,13 +143,13 @@ export default function HomeCMS() {
                 var obj = result.result;
                 var keys = Object.keys(obj).filter(k => !['createdAt', 'updatedAt'].includes(k));
                 for (const key of keys) {
-                    if(key === 'category_data') {
+                    if (key === 'category_data') {
                         setValue(key, obj[key].map(c => ({
                             "label": c.name,
                             "value": c._id
                         })), { shouldValidate: true });
                     }
-                    else if(key === 'global_tender_data' || key === 'indian_tender_data') {
+                    else if (key === 'global_tender_data' || key === 'indian_tender_data') {
                         // setValue(key, obj[key].map(c => {
                         //     var _t = resp.result.result.find(t => t._id == c._id);
                         //     return {
@@ -157,11 +159,11 @@ export default function HomeCMS() {
                         // }), { shouldValidate: true });
 
                         var _data = resp.result.result.filter(c => obj[key].some(o => o._id == c._id))
-                        if(_data.length > 0)
-                        setValue(key, _data.map(c => ({
-                            "label": c.authority_name,
-                            "value": c._id
-                        })), { shouldValidate: true });
+                        if (_data.length > 0)
+                            setValue(key, _data.map(c => ({
+                                "label": c.authority_name,
+                                "value": c._id
+                            })), { shouldValidate: true });
                     }
                     else {
                         setValue(key, obj[key], { shouldValidate: true });
