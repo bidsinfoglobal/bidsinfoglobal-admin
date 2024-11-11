@@ -200,66 +200,157 @@ export default function SectorMaster() {
 
 function ManagerModel({ id, _sector, submitHandler }) {
   const [open, setOpen] = useState(false);
-  const { register, handleSubmit, formState: { errors }, setError } = useForm();
+  const { register, handleSubmit, formState: { errors }, watch,reset } = useForm();
+  const [currentIcon, setCurrentIcon] = useState(_sector?.icon || null); // Store the default icon if available
+  const iconFile = watch("icon"); // Watch the 'icon' field for changes
 
-  const onSubmit = (body) => {
+  const onSubmit = async (body) => {
     var form_data = new FormData();
+
+    // Append all fields except 'icon' to FormData
     for (var key in body) {
-      var val = ['icon'].includes(key) ? body[key][0] : body[key]
-      if (key === 'icon') {
-        key = 'image'
+      if (key !== "icon") {
+        form_data.append(key, body[key]);
       }
-      console.log(key, val)
-      if (val)
-        form_data.append(key === "icon" ? "image" : key, val);
     }
+
+    if (iconFile && iconFile[0]) {
+      // Append new icon file if user has selected a new one
+      form_data.append("image", iconFile[0]);
+    } else if (currentIcon) {
+      // Fetch the binary data of the default icon if no new file is uploaded
+      try {
+        const response = await fetch(currentIcon);
+        const blob = await response.blob();
+        form_data.append("image", blob, "default_icon.png");
+      } catch (error) {
+        console.error("Error fetching the default icon:", error);
+      }
+    }
+
+    // Logging to ensure form_data is correct
+    for (let pair of form_data.entries()) {
+      console.log(pair[0] + ": " + pair[1]);
+    }
+
+    // Call submitHandler with the form data
     submitHandler(form_data, id, setOpen);
-  }
+    reset()
+  };
 
   return (
     <div className="">
-      <Button className={!id ? 'float-right mb-2' : ''} title={(id ? "Edit" : "Add")} icon={id ? <EditFilled /> : <PlusOutlined />} onClick={() => setOpen(true)}>{id ? '' : 'Add'}</Button>
+      <Button
+        className={!id ? 'float-right mb-2' : ''}
+        title={(id ? "Edit" : "Add")}
+        icon={id ? <EditFilled /> : <PlusOutlined />}
+        onClick={() => setOpen(true)}
+      >
+        {id ? '' : 'Add'}
+      </Button>
 
-      <Modal centered title={(id ? "Edit" : "Add") + " Sector"} open={open} onOk={() => setOpen(false)} footer={false} onCancel={() => setOpen(false)}>
+      <Modal
+        centered
+        title={(id ? "Edit" : "Add") + " Sector"}
+        open={open}
+        onOk={() => setOpen(false)}
+        footer={false}
+        onCancel={() => setOpen(false)}
+      >
         <div>
-          <form onSubmit={handleSubmit(onSubmit)} id='sector_form'>
+          <form onSubmit={handleSubmit(onSubmit)} id="sector_form">
             <div className="form-group mb-6">
-              <label className="font-bold">Name <span className='text-red-600'>*</span></label>
-              <span className='text-red-600 md:ml-4'>{errors?.name?.message}</span>
-              <input type="text" className={inputClass} name="name" {...register("name", { required: 'field is required' })}
-                aria-describedby="name" placeholder="name" defaultValue={_sector?.name || ''} />
+              <label className="font-bold">
+                Name <span className="text-red-600">*</span>
+              </label>
+              <span className="text-red-600 md:ml-4">{errors?.name?.message}</span>
+              <input
+                type="text"
+                className={inputClass}
+                name="name"
+                {...register("name", { required: 'field is required' })}
+                aria-describedby="name"
+                placeholder="name"
+                defaultValue={_sector?.name || ''}
+              />
             </div>
             <div className="form-group mb-6">
-              <label className="font-bold">Title <span className='text-red-600'>*</span></label>
-              <span className='text-red-600 md:ml-4'>{errors?.title?.message}</span>
-              <input type="text" className={inputClass} name="title" {...register("title", { required: 'field is required' })}
-                aria-describedby="description" placeholder="title" defaultValue={_sector?.title || ''} />
+              <label className="font-bold">
+                Title <span className="text-red-600">*</span>
+              </label>
+              <span className="text-red-600 md:ml-4">{errors?.title?.message}</span>
+              <input
+                type="text"
+                className={inputClass}
+                name="title"
+                {...register("title", { required: 'field is required' })}
+                aria-describedby="description"
+                placeholder="title"
+                defaultValue={_sector?.title || ''}
+              />
             </div>
             <div className="form-group mb-6">
-              <label className="font-bold">Description <span className='text-red-600'>*</span></label>
-              <span className='text-red-600 md:ml-4'>{errors?.description?.message}</span>
-              <textarea type="text" className={inputClass} name="description" {...register("description", { required: 'field is required' })}
-                aria-describedby="description" placeholder="description" defaultValue={_sector?.description || ''} />
+              <label className="font-bold">
+                Description <span className="text-red-600">*</span>
+              </label>
+              <span className="text-red-600 md:ml-4">{errors?.description?.message}</span>
+              <textarea
+                type="text"
+                className={inputClass}
+                name="description"
+                {...register("description", { required: 'field is required' })}
+                aria-describedby="description"
+                placeholder="description"
+                defaultValue={_sector?.description || ''}
+              />
             </div>
             <div className="form-group mb-6">
-              <label className="font-bold">Icon <span className='text-red-600'>*</span></label>
-              <span className='text-red-600 md:ml-4'>{errors?.icon?.message}</span>
-              <input type="file" className={inputClass} name="icon" {...register("icon", { required: 'field is required' })}
-                aria-describedby="icon" placeholder="icon" />
+              <label className="font-bold">
+                Icon <span className="text-red-600">*</span>
+              </label>
+              <span className="text-red-600 md:ml-4">{errors?.icon?.message}</span>
+              
+              {currentIcon && (
+                <div className="mb-4">
+                  <img src={currentIcon} alt="Current Icon" className="h-16 w-16 rounded" />
+                </div>
+              )}
+              
+              <input
+                type="file"
+                accept="image/jpeg, image/png, image/jpg"
+                className={inputClass}
+                name="icon"
+                {...register("icon", { required: !_sector?.icon ? 'field is required' : false })}
+                aria-describedby="icon"
+                placeholder="icon"
+              />
             </div>
             <div className="form-group mb-6">
-              <label className="font-bold">Code <span className='text-red-600'>*</span></label>
-              <span className='text-red-600 md:ml-4'>{errors?.code?.message}</span>
-              <input type="text" className={inputClass} name="code" {...register("code", { required: 'field is required' })}
-                aria-describedby="code" placeholder="code" defaultValue={_sector?.code || ''} />
+              <label className="font-bold">
+                Code <span className="text-red-600">*</span>
+              </label>
+              <span className="text-red-600 md:ml-4">{errors?.code?.message}</span>
+              <input
+                type="text"
+                className={inputClass}
+                name="code"
+                {...register("code", { required: 'field is required' })}
+                aria-describedby="code"
+                placeholder="code"
+                defaultValue={_sector?.code || ''}
+              />
             </div>
-            
+
             <div>
-              <button type="submit" className="px-4 py-2 rounded shadow hover:bg-gray-200">Submit</button>
+              <button type="submit" className="px-4 py-2 rounded shadow hover:bg-gray-200">
+                Submit
+              </button>
             </div>
           </form>
         </div>
       </Modal>
     </div>
-  )
+  );
 }
+
