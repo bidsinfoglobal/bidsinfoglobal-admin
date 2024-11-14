@@ -110,6 +110,15 @@ export default function ContractAward() {
 
     const columns = [
         {
+            title: 'Title',
+            dataIndex: 'title',
+            key: 'title',
+            fixed: 'left',
+            width: 170,
+            height: 100,
+            sorter: (a, b) => a.title - b.title
+        },
+        {
             title: 'Org Name',
             dataIndex: 'org_name',
             key: 'org_name',
@@ -440,6 +449,12 @@ function ManagerModel({ id, _contract, submitHandler }) {
                 <div>
                     <form onSubmit={handleSubmit(onSubmit)}>
                       <div className='grid md:grid-cols-2 lg:grid-cols-3 md:gap-3'>
+                        <div className="form-group mb-6">
+                            <label className="font-bold">Title <span className='text-red-600'>*</span></label>
+                            <span className='text-red-600 md:ml-4'>{errors?.title?.message}</span>
+                            <input type="text" className={inputClass} name="title" {...register("title", { required: 'field is required' })}
+                                aria-describedby="title" placeholder="title" defaultValue={_contract?.title || ''} />
+                        </div>
                         <div className="form-group mb-6">
                             <label className="font-bold">Organisation Name <span className='text-red-600'>*</span></label>
                             <span className='text-red-600 md:ml-4'>{errors?.org_name?.message}</span>

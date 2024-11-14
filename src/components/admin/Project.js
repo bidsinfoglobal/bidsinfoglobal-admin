@@ -109,6 +109,15 @@ export default function Project() {
 
     const columns = [
         {
+            title: 'Title',
+            dataIndex: 'title',
+            key: 'title',
+            fixed: 'left',
+            width: 170,
+            height: 100,
+            sorter: (a, b) => a.title - b.title
+        },
+        {
             title: 'Name',
             dataIndex: 'project_name',
             key: 'project_name',
@@ -151,6 +160,13 @@ export default function Project() {
             key: 'estimated_project_completion_date',
             width: 150,
             sorter: (a, b) => a.estimated_project_completion_date - b.estimated_project_completion_date
+          },
+          {
+            title: 'Big Ref No',
+            dataIndex: 'big_ref_no',
+            key: 'big_ref_no',
+            width: 150,
+            sorter: (a, b) => a.big_ref_no - b.big_ref_no
           },
           {
             title: 'Client Name',
@@ -397,6 +413,12 @@ function ManagerModel({ id, _project, submitHandler }) {
                     <form onSubmit={handleSubmit(onSubmit)}>
                       <div className='grid md:grid-cols-2 lg:grid-cols-3 md:gap-3'>
                         <div className="form-group mb-6">
+                            <label className="font-bold">Title <span className='text-red-600'>*</span></label>
+                            <span className='text-red-600 md:ml-4'>{errors?.title?.message}</span>
+                            <input type="text" className={inputClass} name="title" {...register("title", { required: 'field is required' })}
+                                aria-describedby="title" placeholder="title" defaultValue={_project?.title || ''} />
+                        </div>
+                        <div className="form-group mb-6">
                             <label className="font-bold">Project Name <span className='text-red-600'>*</span></label>
                             <span className='text-red-600 md:ml-4'>{errors?.project_name?.message}</span>
                             <input type="text" className={inputClass} name="project_name" {...register("project_name", { required: 'field is required' })}
@@ -434,6 +456,12 @@ function ManagerModel({ id, _project, submitHandler }) {
                         </div>
                         </div>
                         <div className='grid md:grid-cols-2 lg:grid-cols-3 md:gap-3'>
+                        <div className="form-group mb-6">
+                            <label className="font-bold">Big Ref Number</label>
+                            <span className='text-red-600 md:ml-4'>{errors?.big_ref_no?.message}</span>
+                            <input type="text" className={inputClass} name="big_ref_no" {...register("big_ref_no")} 
+                                aria-describedby="big_ref_no" placeholder="big_ref_no" defaultValue={_project?.big_ref_no || ''} />
+                        </div>
                         <div className="form-group mb-6">
                             <label className="font-bold">Client Name</label>
                             <span className='text-red-600 md:ml-4'>{errors?.client_name?.message}</span>
