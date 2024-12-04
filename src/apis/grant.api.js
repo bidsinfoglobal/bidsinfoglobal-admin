@@ -7,10 +7,14 @@ import { axios } from "./axios";
  * @param {Object} params request body.
  * @return {Promise<import("axios").AxiosResponse>} return axios response.
  */
-export const fetchGrants = async ({ pageNo, limit, sortBy, sortField, keywords }) => {
-    var parmas = `?pageNo=${pageNo}&limit=${limit}&sortBy=${sortBy}&sortField=${sortField}&keywords=${keywords}`;
-    return await axios.get('/grants/list' + parmas);
+export const fetchGrants = async (params) => {
+    // var parmas = `?pageNo=${pageNo}&limit=${limit}&sortBy=${sortBy}&sortField=${sortField}&keywords=${keywords}`;
+    return await axios.get('/grants/list' , { params: params });
 }
+// export const fetchGrants = async ({ pageNo, limit, sortBy, sortField, keywords }) => {
+//     var parmas = `?pageNo=${pageNo}&limit=${limit}&sortBy=${sortBy}&sortField=${sortField}&keywords=${keywords}`;
+//     return await axios.get('/grants/list' + parmas);
+// }
 
 /**
  * 

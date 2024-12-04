@@ -9,7 +9,14 @@ import { fetchRegion } from '../../../apis/master/region.api'
 import { fetchCPVCode } from '../../../apis/master/cpvcode.api'
 import { fetchCustomerRecords, changeCustomerParameter } from '../../../redux/slice/customer.slice'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { AssignTendersToCustomer } from '../../../apis/common.api'
+import { AssignTendersToCustomer, getCustomerDetail } from '../../../apis/common.api'
+import { AutoComplete } from 'antd'
+import { fetchCountries } from '../../../apis/master/country.api'
+import moment from 'moment'
+import { changeProjectParameter, fetchProjectRecords } from '../../../redux/slice/project.slice'
+import { changeGrantParameter, fetchGrantRecords } from '../../../redux/slice/grant.slice'
+import { changeContractAwardParameter, fetchContractAwardRecords } from '../../../redux/slice/contractaward.slice'
+
 
 const inputClass = `form-control
 block
@@ -29,14 +36,21 @@ focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none`;
 const { RangePicker } = DatePicker;
 
 export default function ActivationPanel({ props }) {
-  const { register, handleSubmit, formState: { errors }, setValue, getValues, control } = useForm();
+  const { register, handleSubmit, formState: { errors }, setValue, getValues, control, watch } = useForm({ defaultValues: { data_type: "tender" } });
   const Customer = useSelector((state) => state.customer)
   const [cpv_codes, set_cpv_codes] = useState([])
   const [sectors, set_sectors] = useState([])
   const [regions, set_regions] = useState([])
   const [funding, set_funding] = useState([])
+  const [query, setQuery] = useState();
+
+  const watchField = watch()
 
   const Tender = useSelector((state) => state.tender)
+  const Grant = useSelector((state) => state.grant)
+  const Contract = useSelector((state) => state.contract)
+  const Project = useSelector((state) => state.project)
+
   const dispatch = useDispatch()
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -48,8 +62,12 @@ export default function ActivationPanel({ props }) {
   const _sectors = searchParams.get('sectors') ? searchParams.get('sectors').split(',') : [];
   const _cpv_codes = searchParams.get('cpv_codes') ? searchParams.get('cpv_codes').split(',') : [];
   const _regions = searchParams.get('regions') ? searchParams.get('regions').split(',') : [];
+  const _country = searchParams.get('country') ? searchParams.get('country').split(',') : [];
   const _funding_agency = searchParams.get('funding_agency') ? searchParams.get('funding_agency').split(',') : [];
   const [filter_timeout, set_filter_timeout] = useState(0);
+  const [countries, set_countries] = useState([]);
+  const [country_timeout, setCountry_timeout] = useState(0);
+
 
   const [pagination, setPagination] = React.useState({
     current: 1,
@@ -89,7 +107,49 @@ export default function ActivationPanel({ props }) {
       setValue("sectors", _sectors, { shouldValidate: true })
     }
   }
+  const handleCountrySearch = async (value) => {
+    if (country_timeout) clearTimeout(country_timeout);
+    if (!value || !value.trim()) {
+      setValue('country', '');
+      // setCountries([])
+    } else {
 
+      var timeoutRef = setTimeout(async () => {
+        var _countries = await fetchCountries({ pageNo: 0, limit: 15, sortBy: 1, sortField: 'name', keywords: value.trim() })
+
+        var resp = _countries.data;
+        console.log('country data', resp.result.result)
+        if (resp.success) {
+          var result = resp.result.result.map(s => ({
+            label: s.name,
+            value: s.name
+          }))
+          // setCountries(() => result);
+        }
+        else {
+          // setCountries([]);
+        }
+      }, 800);
+      setCountry_timeout(timeoutRef);
+    }
+  };
+
+  async function fetchAllCountries(keywords = '', isSearch = false) {
+    var res = await fetchCountries({
+      pageNo: 0, limit: 300, sortBy: '1', sortField: 'name', keywords
+    });
+
+    res = res.data.result.result;
+
+    set_countries(res.map(c => ({
+      label: c.name,
+      value: c.name
+    })))
+
+    if (!isSearch) {
+      setValue("country", _country, { shouldValidate: true })
+    }
+  }
   async function fetchAllRegions(keywords = '', isSearch = false) {
     var res = await fetchRegion({
       pageNo: 0, limit: 100, sortBy: '1', sortField: '_id', keywords
@@ -145,7 +205,9 @@ export default function ActivationPanel({ props }) {
     fetchCPV();
     fetchAllSectors();
     fetchAllRegions();
+    fetchAllCountries();
     fetchAllFundingAgency();
+
 
     if (_keyword || _sectors.length || _cpv_codes.length || _regions.length || _funding_agency.length) {
       setTimeout(() => {
@@ -165,14 +227,68 @@ export default function ActivationPanel({ props }) {
   }, [])
 
   useEffect(() => {
-    setPagination({
-      ...pagination,
-      total: Tender.count
-    })
-  }, [Tender.count])
+    if (watchField.data_type === "tender") {
 
-  function fetchRecord({ pageNo, limit, sortBy, sortField, keywords, cpv_codes, sectors, regions, funding_agency, search_type, from_date, to_date }) {
-    dispatch(fetchTenderRecords({ pageNo, limit, sortBy, sortField, keywords: keywords, cpv_codes, sectors, regions, funding_agency, search_type, from_date, to_date }));
+      setQuery(Tender?.query)
+      setPagination({
+        ...pagination,
+        total: Tender.count
+      })
+    }
+  }, [Tender.count, watchField?.data_type])
+
+  useEffect(() => {
+    if (watchField.data_type === "projects") {
+      console.log(Project)
+      setQuery(Project?.query)
+
+      setPagination({
+        ...pagination,
+        total: Project.count
+      })
+    }
+  }, [Project.count, watchField?.data_type])
+
+  useEffect(() => {
+    if (watchField.data_type === "grants") {
+      setQuery(Grant?.query)
+
+      setPagination({
+        ...pagination,
+        total: Grant.count
+      })
+    }
+  }, [Grant.count, watchField?.data_type])
+
+  useEffect(() => {
+    if (watchField.data_type === "contract_awards") {
+      setQuery(Contract?.query)
+
+      setPagination({
+        ...pagination,
+        total: Contract.count
+      })
+    }
+  }, [Contract.count, watchField?.data_type])
+
+  function fetchRecord({ pageNo,exclude_words, data_type, limit, sortBy, sortField, keywords, cpv_codes, sectors, regions, country, funding_agency, search_type, from_date, to_date }) {
+    console.log(data_type)
+    if (data_type === "tender") {
+
+      dispatch(fetchTenderRecords({ pageNo, exclude_words,limit, sortBy, sortField, keywords: keywords, country, cpv_codes, sectors, regions, funding_agency, search_type, from_date, to_date }));
+    }
+    else if (data_type === "projects") {
+      dispatch(fetchProjectRecords({ pageNo, exclude_words,limit, sortBy, sortField, keywords: keywords, country, cpv_codes, sectors, regions, funding_agency, search_type, from_date, to_date }));
+
+    }
+    else if (data_type === "grants") {
+      dispatch(fetchGrantRecords({ pageNo,exclude_words ,limit, sortBy, sortField, keywords: keywords, country, cpv_codes, sectors, regions, funding_agency, search_type, from_date, to_date }));
+
+    }
+    else if (data_type === "contract_awards") {
+      dispatch(fetchContractAwardRecords({ pageNo, exclude_words,limit, sortBy, sortField, keywords: keywords, country, cpv_codes, sectors, regions, funding_agency, search_type, from_date, to_date }));
+
+    }
   }
 
   const getFormValues = () => {
@@ -186,10 +302,13 @@ export default function ActivationPanel({ props }) {
 
   const handleTenderSearch = async (body) => {
     try {
+
       body.sectors = body.sectors ? body.sectors.join(",") : "";
+      // body.data_type = body.data_type ? body.data_type : "";
       body.cpv_codes = body.cpv_codes ? body.cpv_codes.join(",") : "";
       body.regions = body.regions ? body.regions.join(",") : "";
       body.funding_agency = body.funding_agency ? body.funding_agency.join(",") : "";
+      body.country = body.country ? body.country.join(",") : "";
       fetchRecord({
         pageNo: Tender.pageNo, limit: Tender.limit, sortBy: Tender.sortBy, sortField: Tender.sortField,
         ...body
@@ -204,7 +323,7 @@ export default function ActivationPanel({ props }) {
   const handleTenderSubmit = async () => {
     try {
       let body = {
-        tenders_id: Tender.records.map(r => r._id),
+        data_id: Tender.records.map(r => r._id),
         customer_id: customerid,
         filter: getValues()
       }
@@ -223,19 +342,66 @@ export default function ActivationPanel({ props }) {
 
   const onChange_table = (paginate, filter, sorter, extra) => {
     // console.log({paginate, filter, sorter, extra})
-    paginate.total = Tender.count;
-    paginate.sort = {};
+    if (watchField.data_type === "tender") {
+      paginate.total = Tender.count;
+      paginate.sort = {};
 
-    if (extra.action == "sort") {
-      paginate.sort[`${sorter.field}`] = sorter.order == 'ascent' ? 1 : -1;
+      if (extra.action == "sort") {
+        paginate.sort[`${sorter.field}`] = sorter.order == 'ascent' ? 1 : -1;
+      }
+      else {
+        paginate.sort = pagination.sort;
+      }
+      setPagination(paginate);
+      console.log('paginate', paginate);
+      dispatch(changeTenderParameter({ pageNo: paginate.current - 1, limit: paginate.pageSize, sortBy: paginate.sort[Object.keys(paginate.sort)[0]], sortField: Object.keys(paginate.sort)[0], ...getFormValues() }))
+      dispatch(fetchTenderRecords({ pageNo: paginate.current - 1, limit: paginate.pageSize, sortBy: paginate.sort[Object.keys(paginate.sort)[0]], sortField: Object.keys(paginate.sort)[0], keywords: Tender.keywords, ...getFormValues() }));
     }
-    else {
-      paginate.sort = pagination.sort;
+    if (watchField.data_type === "projects") {
+      paginate.total = Project.count;
+      paginate.sort = {};
+
+      if (extra.action == "sort") {
+        paginate.sort[`${sorter.field}`] = sorter.order == 'ascent' ? 1 : -1;
+      }
+      else {
+        paginate.sort = pagination.sort;
+      }
+      setPagination(paginate);
+      console.log('paginate', paginate);
+      dispatch(changeProjectParameter({ pageNo: paginate.current - 1, limit: paginate.pageSize, sortBy: paginate.sort[Object.keys(paginate.sort)[0]], sortField: Object.keys(paginate.sort)[0], ...getFormValues() }))
+      dispatch(fetchProjectRecords({ pageNo: paginate.current - 1, limit: paginate.pageSize, sortBy: paginate.sort[Object.keys(paginate.sort)[0]], sortField: Object.keys(paginate.sort)[0], keywords: Project.keywords, ...getFormValues() }));
     }
-    setPagination(paginate);
-    console.log('paginate', paginate);
-    dispatch(changeTenderParameter({ pageNo: paginate.current - 1, limit: paginate.pageSize, sortBy: paginate.sort[Object.keys(paginate.sort)[0]], sortField: Object.keys(paginate.sort)[0], ...getFormValues() }))
-    dispatch(fetchTenderRecords({ pageNo: paginate.current - 1, limit: paginate.pageSize, sortBy: paginate.sort[Object.keys(paginate.sort)[0]], sortField: Object.keys(paginate.sort)[0], keywords: Tender.keywords, ...getFormValues() }));
+    if (watchField.data_type === "grants") {
+      paginate.total = Grant.count;
+      paginate.sort = {};
+
+      if (extra.action == "sort") {
+        paginate.sort[`${sorter.field}`] = sorter.order == 'ascent' ? 1 : -1;
+      }
+      else {
+        paginate.sort = pagination.sort;
+      }
+      setPagination(paginate);
+      console.log('paginate', paginate);
+      dispatch(changeGrantParameter({ pageNo: paginate.current - 1, limit: paginate.pageSize, sortBy: paginate.sort[Object.keys(paginate.sort)[0]], sortField: Object.keys(paginate.sort)[0], ...getFormValues() }))
+      dispatch(fetchGrantRecords({ pageNo: paginate.current - 1, limit: paginate.pageSize, sortBy: paginate.sort[Object.keys(paginate.sort)[0]], sortField: Object.keys(paginate.sort)[0], keywords: Grant.keywords, ...getFormValues() }));
+    }
+    if (watchField.data_type === "contract_awards") {
+      paginate.total = Contract.count;
+      paginate.sort = {};
+
+      if (extra.action == "sort") {
+        paginate.sort[`${sorter.field}`] = sorter.order == 'ascent' ? 1 : -1;
+      }
+      else {
+        paginate.sort = pagination.sort;
+      }
+      setPagination(paginate);
+      console.log('paginate', paginate);
+      dispatch(changeContractAwardParameter({ pageNo: paginate.current - 1, limit: paginate.pageSize, sortBy: paginate.sort[Object.keys(paginate.sort)[0]], sortField: Object.keys(paginate.sort)[0], ...getFormValues() }))
+      dispatch(fetchContractAwardRecords({ pageNo: paginate.current - 1, limit: paginate.pageSize, sortBy: paginate.sort[Object.keys(paginate.sort)[0]], sortField: Object.keys(paginate.sort)[0], keywords: Contract.keywords, ...getFormValues() }));
+    }
   }
 
   function OnChangeFilter(name, value) {
@@ -252,6 +418,9 @@ export default function ActivationPanel({ props }) {
       }
       else if (name === 'regions') {
         fetchAllRegions(value, true)
+      }
+      else if (name === 'country') {
+        fetchAllCountries(value, true)
       }
       else if (name === 'funding_agency') {
         fetchAllFundingAgency(value, true)
@@ -270,6 +439,9 @@ export default function ActivationPanel({ props }) {
     }
     else if (name === 'regions') {
       fetchAllRegions('', true)
+    }
+    else if (name === 'country') {
+      fetchAllCountries('', true)
     }
     else if (name === 'funding_agency') {
       fetchAllFundingAgency('', true)
@@ -449,6 +621,64 @@ export default function ActivationPanel({ props }) {
     // //   sorter: (a, b) => a._id - b._id
     // },
   ];
+  const [filterData, setFilterData] = useState();
+
+  const setFilter = (filterData) => {
+    const fieldsToSet = ["country", "cpv_codes", "exclude_words", "from_date", "funding_agency", "keywords", "regions", "search_type", "sectors", "to_date"];
+    const filtersMap = {
+      tender: filterData.tenders_filter,
+      contract_awards: filterData.contract_awards_filter,
+      projects: filterData.projects_filter,
+      grants: filterData.grants_filter,
+    };
+
+    const selectedFilter = filtersMap[watchField.data_type];
+    if (selectedFilter) {
+      fieldsToSet.forEach((field) => {
+        setValue(field, selectedFilter[field]);
+      });
+    }
+  }
+
+  useEffect(() => {
+    console.log("Fetching data...");
+    const fetchData = async () => {
+      try {
+        const re = await getCustomerDetail(customerid);
+        if (re?.status === 200) {
+          console.log(re.data.result)
+          setFilterData(re.data.result);
+          // setFilter(re.data.result);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchData();
+  }, [customerid]); // Only run when customerid changes
+
+
+  useEffect(() => {
+    if (!filterData) return;
+
+    const fieldsToSet = ["country", "cpv_codes", "exclude_words", "from_date", "funding_agency", "keywords", "regions", "search_type", "sectors", "to_date"];
+    const filtersMap = {
+      tender: filterData.tenders_filter,
+      contract_awards: filterData.contract_awards_filter,
+      projects: filterData.projects_filter,
+      grants: filterData.grants_filter,
+    };
+
+    const selectedFilter = filtersMap[watchField.data_type];
+    if (selectedFilter) {
+      fieldsToSet.forEach((field) => {
+        setValue(field, selectedFilter[field]);
+      });
+    }
+  }, [filterData, watchField.data_type]);
+
+
+
 
   return (
     <div>
@@ -457,52 +687,96 @@ export default function ActivationPanel({ props }) {
         {/* <input className={`${inputClass} w-1/2`} onChange={(e) => console.log(e.target.value)} placeholder='Search' /> */}
         {/* <ManagerModel submitHandler={handleTenderSubmit} fetchCustomers={fetchCustomers} tender_ids={Tender.records.map(r => r._id)} /> */}
         {
-          Tender.records.length > 0 &&
+          //  Tender.records.length > 0 &&
           <Button onClick={handleTenderSubmit}>Activate this filter</Button>
         }
       </div>
       <div className='ring-1 rounded my-2 px-4 py-2 ring-gray-100 shadow'>
-        <h1 className='font-semibold text-lg'>Filter Record</h1>
         <form onSubmit={handleSubmit(handleTenderSearch)}>
-          <div className='grid md:gap-3 items-end'>
-            <div className='grid md:grid-cols-2 gap-3'>
-              <Controller
-                control={control}
-                name="search_type"
-                {...register("search_type")}
-                defaultValue={_search_type || "Any Word"}
-                render={({ field }) => (
-                  <Select
-                    title='Search Type'
-                    {...field}
-                    style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
-                    placeholder="Please select search type"
-                    options={[
-                      {
-                        label: 'Any Word',
-                        value: 'Any Word'
-                      },
-                      {
-                        label: 'Exact Phrase',
-                        value: 'Exact Phrase'
-                      },
-                      {
-                        label: 'Relevent Word',
-                        value: 'Relevent Word'
-                      }
-                    ]}
-                  />
-                )}
+          <Controller
+            control={control}
+            name="data_type"
+            {...register("data_type")}
+            // defaultValue={"tender"}
+            render={({ field }) => (
+              <Select
+                title='Data Type'
+                {...field}
+                style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
+                placeholder="Please select Data type"
+                // onChange={(data)=>{console.log("QWeqw")}}
+                options={[
+                  {
+                    label: 'Tender',
+                    value: 'tender'
+                  },
+                  {
+                    label: 'Contract Awards',
+                    value: 'contract_awards'
+                  },
+                  {
+                    label: 'Projects',
+                    value: 'projects'
+                  },
+                  {
+                    label: 'Grants',
+                    value: 'grants'
+                  }
+                ]}
               />
+            )}
+          />
+          <h1 className='font-semibold text-lg'>Filter Record</h1>
+          <div className='grid md:gap-3  items-end'>
+            <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-3 d-flex '>
+              <div className='form-group'>
+
+                <label className="font-bold">Search Type</label>
+
+                <Controller
+                  control={control}
+                  name="search_type"
+                  {...register("search_type")}
+                  defaultValue={_search_type || "Any Word"}
+                  render={({ field }) => (
+                    <Select
+                      title='Search Type'
+                      {...field}
+                      style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
+                      placeholder="Please select search type"
+                      options={[
+                        {
+                          label: 'Any Word',
+                          value: 'Any Word'
+                        },
+                        {
+                          label: 'Exact Phrase',
+                          value: 'Exact Phrase'
+                        },
+                        {
+                          label: 'Relevent Word',
+                          value: 'Relevent Word'
+                        }
+                      ]}
+                    />
+                  )}
+                />
+              </div>
               <div className="form-group mb-6">
-                {/* <label className="font-bold">Search</label> */}
+                <label className="font-bold">Search</label>
                 {/* <span className='text-red-600 md:ml-4'>{errors?.keywords?.message}</span> */}
                 <input type="text" className={inputClass} name="keywords" {...register("keywords")}
                   aria-describedby="keywords" placeholder="search" defaultValue={_keyword} />
               </div>
+              <div className="form-group mb-6">
+                <label className="font-bold">Exclude Words</label>
+                {/* <span className='text-red-600 md:ml-4'>{errors?.keywords?.message}</span> */}
+                <input type="text" className={inputClass} name="exclude_words" {...register("exclude_words")}
+                  aria-describedby="exclude_keywords" placeholder="Exclude Word" />
+              </div>
             </div>
 
-            <div className='grid md:grid-cols-2 lg:grid-cols-4 md:gap-3'>
+            <div className='grid md:grid-cols-2 lg:grid-cols-3 md:gap-3'>
               <Controller
                 control={control}
                 name="cpv_codes"
@@ -582,14 +856,39 @@ export default function ActivationPanel({ props }) {
                   />
                 )}
               />
+              <Controller
+                control={control}
+                name="country"
+                {...register("country")}
+                render={({ field }) => (
+                  <Select
+                    {...field}
+                    title='Country'
+                    mode="multiple"
+                    allowClear
+                    style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
+                    placeholder="Please select country"
+                    onDeselect={(val) => OnResetFilter('country')}
+                    onChange={(value) => { setValue("country", value); OnResetFilter('country') }}
+                    onSearch={value => OnChangeFilter("country", value)}
+                    options={countries}
+                  />
+                )}
+              />
             </div>
 
             <div className='grid md:grid-cols-2 gap-3'>
+
               <RangePicker
                 // showTime={{
                 //   format: 'YYYY-MM-DD',
                 // }}
                 // format="YYYY-MM-DD"
+                value={
+                  watchField.from_date && watchField.to_date
+                    ? [moment(watchField.from_date, 'YYYY-MM-DD'), moment(watchField.to_date, 'YYYY-MM-DD')]
+                    : null
+                }
                 style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
                 // onOk={handleDateRange}
                 onChange={handleDateRange}
@@ -603,19 +902,63 @@ export default function ActivationPanel({ props }) {
                 />
               </div>
             </div>
+            <div className='grid md:grid-cols-1 lg:grid-cols-1 gap-3 d-flex '>
+
+              {query ?
+                <div className="form-group mb-6">
+                  <label className="font-bold">Raw Query</label>
+                  {/* <span className='text-red-600 md:ml-4'>{errors?.keywords?.message}</span> */}
+                  <textarea type="text" className={inputClass} value={query}
+                    aria-describedby="exclude_keywords" placeholder="Raw Query" />
+                </div> : ""
+              }
+            </div>
           </div>
         </form>
       </div>
-      {console.log(pagination, ":pagination")}
-      <Table
-        loading={Tender.loading}
-        pagination={{ pageSizeOptions: ['5', '10', '30', '50', '100'], defaultPageSize: 5, showSizeChanger: true, ...pagination }}
-        dataSource={Tender.records}
-        columns={columns}
-        // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
-        scroll={{ y: 430 }}
-        onChange={onChange_table}
-      />
+      {watchField.data_type === "tender" &&
+        <Table
+          loading={Tender.loading}
+          pagination={{ pageSizeOptions: ['5', '10', '30', '50', '100'], defaultPageSize: 5, showSizeChanger: true, ...pagination }}
+          dataSource={Tender.records}
+          columns={columns}
+          // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
+          scroll={{ y: 430 }}
+          onChange={onChange_table}
+        />}
+      {watchField.data_type === "projects" ?
+
+        <Table
+          loading={Project.loading}
+          pagination={{ pageSizeOptions: ['5', '10', '30', '50', '100'], defaultPageSize: 5, showSizeChanger: true, ...pagination }}
+          dataSource={Project.records}
+          columns={columns}
+          // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
+          scroll={{ y: 430 }}
+          onChange={onChange_table}
+        /> : ""}
+      {watchField.data_type === "contract_awards" ?
+
+        <Table
+          loading={Contract.loading}
+          pagination={{ pageSizeOptions: ['5', '10', '30', '50', '100'], defaultPageSize: 5, showSizeChanger: true, ...pagination }}
+          dataSource={Contract.records}
+          columns={columns}
+          // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
+          scroll={{ y: 430 }}
+          onChange={onChange_table}
+        /> : ""}
+      {watchField.data_type === "grants" ?
+
+        <Table
+          loading={Grant.loading}
+          pagination={{ pageSizeOptions: ['5', '10', '30', '50', '100'], defaultPageSize: 5, showSizeChanger: true, ...pagination }}
+          dataSource={Grant.records}
+          columns={columns}
+          // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
+          scroll={{ y: 430 }}
+          onChange={onChange_table}
+        /> : ""}
     </div>
   )
 }

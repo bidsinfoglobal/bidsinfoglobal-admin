@@ -140,6 +140,8 @@ export const regionSlice = createSlice({
       state.sortField = action.payload.sortField;
       state.keywords = action.payload.keywords || '';
       state.count = Number(action.payload.count);
+      state.query = JSON.stringify(action.payload.query);
+
     },
     [fetchGrantRecords.rejected]: (state, action) => {
       toast_popup(action.error.message, 'error')

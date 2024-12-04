@@ -1,9 +1,13 @@
 import { axios } from "./axios";
 
-export const fetchContractAwards = async ({ pageNo, limit, sortBy, sortField, keywords }) => {
-    var parmas = `?pageNo=${pageNo}&limit=${limit}&sortBy=${sortBy}&sortField=${sortField}&keywords=${keywords}`;
-    return await axios.get('/contract-award/list' + parmas);
+export const fetchContractAwards = async (params) => {
+    // var parmas = `?pageNo=${pageNo}&limit=${limit}&sortBy=${sortBy}&sortField=${sortField}&keywords=${keywords}`;
+    return await axios.get('/contract-award/list'  , { params: params });
 }
+// export const fetchContractAwards = async ({ pageNo, limit, sortBy, sortField, keywords }) => {
+//     var parmas = `?pageNo=${pageNo}&limit=${limit}&sortBy=${sortBy}&sortField=${sortField}&keywords=${keywords}`;
+//     return await axios.get('/contract-award/list' + parmas);
+// }
 
 export const insertContractAward = async (body) => {
     return await axios.post('/contract-award', body);

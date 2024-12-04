@@ -121,16 +121,28 @@ export default function RegionMaster() {
       sorter: (a, b) => a.name - b.name
     },
     {
-      title: 'Title',
+      title: 'Tender Title',
       dataIndex: 'title',
       key: 'title',
       sorter: (a, b) => a?.title - b?.title
     },
     {
-      title: 'Description',
+      title: 'Tender Description',
       dataIndex: 'description',
       key: 'description',
       sorter: (a, b) => a?.description - b?.description
+    },
+    {
+      title: 'Project Title',
+      dataIndex: 'project_title',
+      key: 'project_title',
+      sorter: (a, b) => a?.project_title - b?.project_title
+    },
+    {
+      title: 'Project Description',
+      dataIndex: 'project_description',
+      key: 'project_description',
+      sorter: (a, b) => a?.project_description - b?.project_description
     },
     {
       title: 'Code',
@@ -210,16 +222,28 @@ function ManagerModel({ id, _region, submitHandler }) {
                 aria-describedby="name" placeholder="name" defaultValue={_region?.name || ''} />
             </div>
             <div className="form-group mb-6">
-              <label className="font-bold">Title <span className='text-red-600'>*</span></label>
+              <label className="font-bold">Tender Title <span className='text-red-600'>*</span></label>
               <span className='text-red-600 md:ml-4'>{errors?.title?.message}</span>
               <input type="text" className={inputClass} name="title" {...register("title", { required: 'field is required' })}
-                aria-describedby="description" placeholder="title" defaultValue={_region?.title || ''} />
+                aria-describedby="description" placeholder="tender title" defaultValue={_region?.title || ''} />
             </div>
             <div className="form-group mb-6">
-              <label className="font-bold">Description <span className='text-red-600'>*</span></label>
+              <label className="font-bold">Tender Description <span className='text-red-600'>*</span></label>
               <span className='text-red-600 md:ml-4'>{errors?.description?.message}</span>
               <textarea type="text" className={inputClass} name="description" {...register("description", { required: 'field is required' })}
-                aria-describedby="description" placeholder="description" defaultValue={_region?.description || ''} />
+                aria-describedby="description" placeholder="tender description" defaultValue={_region?.description || ''} />
+            </div>
+            <div className="form-group mb-6">
+              <label className="font-bold">Project Title <span className='text-red-600'>*</span></label>
+              <span className='text-red-600 md:ml-4'>{errors?.title?.message}</span>
+              <input type="text" className={inputClass} name="project_title" {...register("project_title", { required: 'field is required' })}
+                aria-describedby="description" placeholder="project title" defaultValue={_region?.project_title || ''} />
+            </div>
+            <div className="form-group mb-6">
+              <label className="font-bold">Project Description <span className='text-red-600'>*</span></label>
+              <span className='text-red-600 md:ml-4'>{errors?.description?.message}</span>
+              <textarea type="text" className={inputClass} name="project_description" {...register("project_description", { required: 'field is required' })}
+                aria-describedby="description" placeholder="project description" defaultValue={_region?.project_description || ''} />
             </div>
             <div className="form-group mb-6">
               <label className="font-bold">Code <span className='text-red-600'>*</span></label>
