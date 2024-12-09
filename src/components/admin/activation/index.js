@@ -199,7 +199,7 @@ export default function ActivationPanel({ props }) {
       sort: { [`${Tender.sortField}`]: Tender.sortBy }
     })
 
-    setValue('search_type', _search_type || 'Any Word');
+    setValue('search_type', _search_type || 'Exact Phrase');
     setValue('from_date', '');
     setValue('to_date', '');
 
@@ -1181,7 +1181,7 @@ export default function ActivationPanel({ props }) {
                     control={control}
                     name="search_type"
                     {...register("search_type")}
-                    defaultValue={_search_type || "Any Word"}
+                    defaultValue={_search_type || "Exact Phrase"}
                     render={({ field }) => (
                       <Select
                         title='Search Type'
@@ -1189,17 +1189,17 @@ export default function ActivationPanel({ props }) {
                         style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
                         placeholder="Please select search type"
                         options={[
-                          {
-                            label: 'Any Word',
-                            value: 'Any Word'
-                          },
+                          // {
+                          //   label: 'Any Word',
+                          //   value: 'Any Word'
+                          // },
                           {
                             label: 'Exact Phrase',
                             value: 'Exact Phrase'
                           },
                           {
-                            label: 'Relevent Word',
-                            value: 'Relevent Word'
+                            label: 'Relevant Word',
+                            value: 'Relevant Word'
                           }
                         ]}
                       />
