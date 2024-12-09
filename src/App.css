@@ -6,6 +6,12 @@
   height: 40vmin;
   pointer-events: none;
 }
+.d-none{
+  display: none;
+}
+.d-block{
+  display: block;
+}
 
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {

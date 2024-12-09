@@ -16,6 +16,7 @@ import moment from 'moment'
 import { changeProjectParameter, fetchProjectRecords } from '../../../redux/slice/project.slice'
 import { changeGrantParameter, fetchGrantRecords } from '../../../redux/slice/grant.slice'
 import { changeContractAwardParameter, fetchContractAwardRecords } from '../../../redux/slice/contractaward.slice'
+import { toast } from 'react-toastify'
 
 
 const inputClass = `form-control
@@ -36,7 +37,7 @@ focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none`;
 const { RangePicker } = DatePicker;
 
 export default function ActivationPanel({ props }) {
-  const { register, handleSubmit, formState: { errors }, setValue, getValues, control, watch } = useForm({ defaultValues: { data_type: "tender" } });
+  const { register, handleSubmit, formState: { errors }, setValue, getValues, control, watch } = useForm({ defaultValues: { data_type: "tender", query_type: "filter_query" } });
   const Customer = useSelector((state) => state.customer)
   const [cpv_codes, set_cpv_codes] = useState([])
   const [sectors, set_sectors] = useState([])
@@ -239,7 +240,6 @@ export default function ActivationPanel({ props }) {
 
   useEffect(() => {
     if (watchField.data_type === "projects") {
-      console.log(Project)
       setQuery(Project?.query)
 
       setPagination({
@@ -247,7 +247,7 @@ export default function ActivationPanel({ props }) {
         total: Project.count
       })
     }
-  }, [Project.count, watchField?.data_type])
+  }, [Project.query, watchField?.data_type])
 
   useEffect(() => {
     if (watchField.data_type === "grants") {
@@ -258,7 +258,7 @@ export default function ActivationPanel({ props }) {
         total: Grant.count
       })
     }
-  }, [Grant.count, watchField?.data_type])
+  }, [Grant.query, watchField?.data_type])
 
   useEffect(() => {
     if (watchField.data_type === "contract_awards") {
@@ -269,24 +269,24 @@ export default function ActivationPanel({ props }) {
         total: Contract.count
       })
     }
-  }, [Contract.count, watchField?.data_type])
+  }, [Contract.query, watchField?.data_type])
 
-  function fetchRecord({ pageNo,exclude_words, data_type, limit, sortBy, sortField, keywords, cpv_codes, sectors, regions, country, funding_agency, search_type, from_date, to_date }) {
+  function fetchRecord({ pageNo, exclude_words, limit, sortBy, sortField, keywords, cpv_codes, sectors, regions, country, funding_agency, search_type, from_date, to_date, raw_query, query_type, data_type }) {
     console.log(data_type)
     if (data_type === "tender") {
 
-      dispatch(fetchTenderRecords({ pageNo, exclude_words,limit, sortBy, sortField, keywords: keywords, country, cpv_codes, sectors, regions, funding_agency, search_type, from_date, to_date }));
+      dispatch(fetchTenderRecords({ pageNo, exclude_words, limit, sortBy, sortField, keywords: keywords, country, cpv_codes, sectors, regions, funding_agency, search_type, from_date, to_date, raw_query, query_type }));
     }
     else if (data_type === "projects") {
-      dispatch(fetchProjectRecords({ pageNo, exclude_words,limit, sortBy, sortField, keywords: keywords, country, cpv_codes, sectors, regions, funding_agency, search_type, from_date, to_date }));
+      dispatch(fetchProjectRecords({ pageNo, exclude_words, limit, sortBy, sortField, keywords: keywords, country, cpv_codes, sectors, regions, funding_agency, search_type, from_date, to_date, raw_query, query_type }));
 
     }
     else if (data_type === "grants") {
-      dispatch(fetchGrantRecords({ pageNo,exclude_words ,limit, sortBy, sortField, keywords: keywords, country, cpv_codes, sectors, regions, funding_agency, search_type, from_date, to_date }));
+      dispatch(fetchGrantRecords({ pageNo, exclude_words, limit, sortBy, sortField, keywords: keywords, country, cpv_codes, sectors, regions, funding_agency, search_type, from_date, to_date, raw_query, query_type }));
 
     }
     else if (data_type === "contract_awards") {
-      dispatch(fetchContractAwardRecords({ pageNo, exclude_words,limit, sortBy, sortField, keywords: keywords, country, cpv_codes, sectors, regions, funding_agency, search_type, from_date, to_date }));
+      dispatch(fetchContractAwardRecords({ pageNo, exclude_words, limit, sortBy, sortField, keywords: keywords, country, cpv_codes, sectors, regions, funding_agency, search_type, from_date, to_date, raw_query, query_type }));
 
     }
   }
@@ -462,7 +462,7 @@ export default function ActivationPanel({ props }) {
   }
 
 
-  const columns = [
+  const tenderColumns = [
     {
       title: 'Authority Name',
       dataIndex: 'authority_name',
@@ -621,24 +621,433 @@ export default function ActivationPanel({ props }) {
     // //   sorter: (a, b) => a._id - b._id
     // },
   ];
+  const projectColumns = [
+    {
+      title: 'Title',
+      dataIndex: 'title',
+      key: 'title',
+      fixed: 'left',
+      width: 170,
+      height: 100,
+      sorter: (a, b) => a.title - b.title
+    },
+    {
+      title: 'Name',
+      dataIndex: 'project_name',
+      key: 'project_name',
+      fixed: 'left',
+      width: 170,
+      height: 100,
+      sorter: (a, b) => a.project_name - b.project_name
+    },
+    {
+      title: 'Background',
+      dataIndex: 'project_background',
+      key: 'project_background',
+      width: 150,
+      sorter: (a, b) => a.project_background - b.project_background
+    },
+    {
+      title: 'Location',
+      dataIndex: 'project_location',
+      key: 'project_location',
+      width: 150,
+      sorter: (a, b) => a.project_location - b.project_location
+    },
+    {
+      title: 'Status',
+      dataIndex: 'project_status',
+      key: 'project_status',
+      width: 150,
+      sorter: (a, b) => a.project_status - b.project_status
+    },
+    {
+      title: 'Publish Date',
+      dataIndex: 'project_publishing_date',
+      key: 'project_publishing_date',
+      width: 150,
+      sorter: (a, b) => a.project_publishing_date - b.project_publishing_date
+    },
+    {
+      title: 'Estimate Date',
+      dataIndex: 'estimated_project_completion_date',
+      key: 'estimated_project_completion_date',
+      width: 150,
+      sorter: (a, b) => a.estimated_project_completion_date - b.estimated_project_completion_date
+    },
+    {
+      title: 'Big Ref No',
+      dataIndex: 'big_ref_no',
+      key: 'big_ref_no',
+      width: 150,
+      sorter: (a, b) => a.big_ref_no - b.big_ref_no
+    },
+    {
+      title: 'Client Name',
+      dataIndex: 'client_name',
+      key: 'client_name',
+      width: 150,
+      sorter: (a, b) => a.client_name - b.client_name
+    },
+    {
+      title: 'Client Address',
+      dataIndex: 'client_address',
+      key: 'client_address',
+      width: 150,
+      sorter: (a, b) => a.client_address - b.client_address
+    },
+    {
+      title: 'Sectors',
+      dataIndex: 'sectors',
+      key: 'sectors',
+      width: 150,
+      sorter: (a, b) => a.sectors - b.sectors
+    },
+    {
+      title: 'CPV Code',
+      dataIndex: 'cpv_codes',
+      key: 'cpv_codes',
+      width: 150,
+      sorter: (a, b) => a.cpv_codes - b.cpv_codes
+    },
+    {
+      title: 'Funding Agency',
+      dataIndex: 'funding_agency',
+      key: 'funding_agency',
+      width: 150,
+      sorter: (a, b) => a.funding_agency - b.funding_agency
+    },
+    {
+      title: 'Regions',
+      dataIndex: 'regions',
+      key: 'regions',
+      width: 150,
+      sorter: (a, b) => a.regions - b.regions
+    },
+    // {
+    //     title: 'Status',
+    //     dataIndex: 'status',
+    //     key: 'status',
+    //     width: '100px',
+    //     render: (e, record) => <div key={record._id}>
+    //         <Switch key={record._id} checked={record.is_active} onChange={(c) => handleStatusChange(c, record._id)} />
+    //     </div>
+    // },
+    {
+      title: 'Date',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      fixed: 'right',
+      width: '150px',
+      render: (e, record) => moment(e).format('lll'),
+      sorter: (a, b) => a.createdAt - b.createdAt
+    }
+  ]
+
+  const grantColumns = [
+    {
+      title: 'Donor',
+      dataIndex: 'donor',
+      key: 'donor',
+      fixed: 'left',
+      width: 100,
+      sorter: (a, b) => a.donor - b.donor
+    },
+    {
+      title: 'Contact Information',
+      dataIndex: 'contact_information',
+      key: 'contact_information',
+      fixed: 'left',
+      width: 150,
+      sorter: (a, b) => a.contact_information - b.contact_information
+    },
+    {
+      title: 'Location',
+      dataIndex: 'location',
+      key: 'location',
+      width: 150,
+      sorter: (a, b) => a.location - b.location
+    },
+    {
+      title: 'Big Ref No',
+      dataIndex: 'big_ref_no',
+      key: 'big_ref_no',
+      width: 150,
+      sorter: (a, b) => a.big_ref_no - b.big_ref_no
+    },
+    {
+      title: 'Title',
+      dataIndex: 'title',
+      key: 'title',
+      width: 150,
+      sorter: (a, b) => a.title - b.title
+    },
+    {
+      title: 'Type',
+      dataIndex: 'type',
+      key: 'type',
+      width: 150,
+      sorter: (a, b) => a.type - b.type
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      width: 150,
+      sorter: (a, b) => a.status - b.status
+    },
+    {
+      title: 'Value',
+      dataIndex: 'value',
+      key: 'value',
+      width: 150,
+      sorter: (a, b) => a.value - b.value
+    },
+    {
+      title: 'Type Of Services',
+      dataIndex: 'type_of_services',
+      key: 'type_of_services',
+      width: 150,
+      sorter: (a, b) => a.type_of_services - b.type_of_services
+    },
+    {
+      title: 'Sectors',
+      dataIndex: 'sectors',
+      key: 'sectors',
+      width: 150,
+      sorter: (a, b) => a.sectors - b.sectors
+    },
+    {
+      title: 'Deadline',
+      dataIndex: 'deadline',
+      key: 'deadline',
+      width: 150,
+      sorter: (a, b) => a.deadline - b.deadline
+    },
+    {
+      title: 'Duration',
+      dataIndex: 'duration',
+      key: 'duration',
+      width: 150,
+      sorter: (a, b) => a.duration - b.duration
+    },
+    {
+      title: 'Attachment',
+      dataIndex: 'attachment',
+      key: 'attachment',
+      width: 150,
+      sorter: (a, b) => a.attachment - b.attachment
+    },
+    {
+      title: 'Post Date',
+      dataIndex: 'post_date',
+      key: 'post_date',
+      width: 150,
+      render: (e) => moment(e).format('ll'),
+      sorter: (a, b) => a.post_date - b.post_date
+    },
+    {
+      title: 'Funding Agency',
+      dataIndex: 'funding_agency',
+      key: 'funding_agency',
+      width: 150,
+      sorter: (a, b) => a.funding_agency - b.funding_agency
+    },
+    {
+      title: 'Cpv Code',
+      dataIndex: 'cpv_codes',
+      key: 'cpv_codes',
+      width: 150,
+      sorter: (a, b) => a.cpv_codes - b.cpv_codes
+    },
+    {
+      title: 'Regions',
+      dataIndex: 'regions',
+      key: 'regions',
+      width: 150,
+      sorter: (a, b) => a.regions - b.regions
+    },
+    // {
+    //     title: 'Status',
+    //     dataIndex: 'status',
+    //     key: 'status',
+    //     width: '100px',
+    //     render: (e, record) => <div key={record._id}>
+    //         <Switch key={record._id} checked={record.is_active} onChange={(c) => handleStatusChange(c, record._id)} />
+    //     </div>
+    // },
+    {
+      title: 'Date',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      fixed: 'right',
+      width: 150,
+      render: (e, record) => moment(e).format('lll'),
+      sorter: (a, b) => a.createdAt - b.createdAt
+    }
+  ]
+  const contractAwardsColumns = [
+    {
+      title: 'Title',
+      dataIndex: 'title',
+      key: 'title',
+      fixed: 'left',
+      width: 170,
+      height: 100,
+      sorter: (a, b) => a.title - b.title
+    },
+    {
+      title: 'Org Name',
+      dataIndex: 'org_name',
+      key: 'org_name',
+      fixed: 'left',
+      width: 170,
+      height: 100,
+      sorter: (a, b) => a.org_name - b.org_name
+    },
+    {
+      title: 'Org Address',
+      dataIndex: 'org_address',
+      key: 'org_address',
+      width: 150,
+      sorter: (a, b) => a.org_address - b.org_address
+    },
+    {
+      title: 'Phone',
+      dataIndex: 'telephone_no',
+      key: 'telephone_no',
+      width: 150,
+      sorter: (a, b) => a.telephone_no - b.telephone_no
+    },
+    {
+      title: 'Fax Number',
+      dataIndex: 'fax_number',
+      key: 'fax_number',
+      width: 150,
+      sorter: (a, b) => a.fax_number - b.fax_number
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+      width: 150,
+      sorter: (a, b) => a.email - b.email
+    },
+    {
+      title: 'Contact Person',
+      dataIndex: 'contact_person',
+      key: 'contact_person',
+      width: 150,
+      sorter: (a, b) => a.contact_person - b.contact_person
+    },
+    {
+      title: 'Big Ref No',
+      dataIndex: 'big_ref_no',
+      key: 'big_ref_no',
+      width: 150,
+      sorter: (a, b) => a.big_ref_no - b.big_ref_no
+    },
+    {
+      title: 'Document No',
+      dataIndex: 'document_no',
+      key: 'document_no',
+      width: 150,
+      sorter: (a, b) => a.document_no - b.document_no
+    },
+    {
+      title: 'Bidding Type',
+      dataIndex: 'bidding_type',
+      key: 'bidding_type',
+      width: 150,
+      sorter: (a, b) => a.bidding_type - b.bidding_type
+    },
+    {
+      title: 'Project Location',
+      dataIndex: 'project_location',
+      key: 'project_location',
+      width: 150,
+      sorter: (a, b) => a.project_location - b.project_location
+    },
+    {
+      title: 'Contractor Details',
+      dataIndex: 'contractor_details',
+      key: 'contractor_details',
+      width: 150,
+      sorter: (a, b) => a.contractor_details - b.contractor_details
+    },
+    {
+      title: 'Tender Notice No',
+      dataIndex: 'tender_notice_no',
+      key: 'tender_notice_no',
+      width: 150,
+      sorter: (a, b) => a.tender_notice_no - b.tender_notice_no
+    },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+      width: 150,
+      sorter: (a, b) => a.description - b.description
+    },
+    {
+      title: 'Sectors',
+      dataIndex: 'sectors',
+      key: 'sectors',
+      width: 150,
+      sorter: (a, b) => a.sectors - b.sectors
+    },
+    {
+      title: 'Awards Publish Date',
+      dataIndex: 'awards_publish_date',
+      key: 'awards_publish_date',
+      width: 150,
+      sorter: (a, b) => a.awards_publish_date - b.awards_publish_date
+    },
+    {
+      title: 'Funding Agency',
+      dataIndex: 'funding_agency',
+      key: 'funding_agency',
+      width: 150,
+      sorter: (a, b) => a.funding_agency - b.funding_agency
+    },
+    {
+      title: 'Cpv Code',
+      dataIndex: 'cpv_codes',
+      key: 'cpv_codes',
+      width: 150,
+      sorter: (a, b) => a.cpv_codes - b.cpv_codes
+    },
+    {
+      title: 'Regions',
+      dataIndex: 'regions',
+      key: 'regions',
+      width: 150,
+      sorter: (a, b) => a.regions - b.regions
+    },
+
+    // {
+    //     title: 'Status',
+    //     dataIndex: 'status',
+    //     key: 'status',
+    //     width: '100px',
+    //     render: (e, record) => <div key={record._id}>
+    //         <Switch key={record._id} checked={record.is_active} onChange={(c) => handleStatusChange(c, record._id)} />
+    //     </div>
+    // },
+    {
+      title: 'Date',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      fixed: 'right',
+      width: '150px',
+      render: (e, record) => moment(e).format('lll'),
+      sorter: (a, b) => a.createdAt - b.createdAt
+    }
+  ]
+
   const [filterData, setFilterData] = useState();
 
-  const setFilter = (filterData) => {
-    const fieldsToSet = ["country", "cpv_codes", "exclude_words", "from_date", "funding_agency", "keywords", "regions", "search_type", "sectors", "to_date"];
-    const filtersMap = {
-      tender: filterData.tenders_filter,
-      contract_awards: filterData.contract_awards_filter,
-      projects: filterData.projects_filter,
-      grants: filterData.grants_filter,
-    };
 
-    const selectedFilter = filtersMap[watchField.data_type];
-    if (selectedFilter) {
-      fieldsToSet.forEach((field) => {
-        setValue(field, selectedFilter[field]);
-      });
-    }
-  }
 
   useEffect(() => {
     console.log("Fetching data...");
@@ -661,7 +1070,7 @@ export default function ActivationPanel({ props }) {
   useEffect(() => {
     if (!filterData) return;
 
-    const fieldsToSet = ["country", "cpv_codes", "exclude_words", "from_date", "funding_agency", "keywords", "regions", "search_type", "sectors", "to_date"];
+    const fieldsToSet = ["country", "cpv_codes", "exclude_words", "from_date", "funding_agency", "keywords", "regions", "search_type", "sectors", "to_date", "query_type", "raw_query"];
     const filtersMap = {
       tender: filterData.tenders_filter,
       contract_awards: filterData.contract_awards_filter,
@@ -672,7 +1081,14 @@ export default function ActivationPanel({ props }) {
     const selectedFilter = filtersMap[watchField.data_type];
     if (selectedFilter) {
       fieldsToSet.forEach((field) => {
-        setValue(field, selectedFilter[field]);
+        if (field === "query_type") {
+
+          setValue(field, selectedFilter[field] ? selectedFilter[field] : "filter_query");
+        }
+        else {
+
+          setValue(field, selectedFilter[field]);
+        }
       });
     }
   }, [filterData, watchField.data_type]);
@@ -726,193 +1142,264 @@ export default function ActivationPanel({ props }) {
               />
             )}
           />
-          <h1 className='font-semibold text-lg'>Filter Record</h1>
-          <div className='grid md:gap-3  items-end'>
-            <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-3 d-flex '>
-              <div className='form-group'>
+          <Controller
+            control={control}
+            name="data_type"
+            {...register("query_type")}
+            // defaultValue={"filter_query"}
+            render={({ field }) => (
+              <Select
+                title='Query Type'
+                {...field}
+                style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
+                placeholder="Please select Query type"
+                // onChange={(data)=>{console.log("QWeqw")}}
+                options={[
+                  {
+                    label: 'Filter Query',
+                    value: 'filter_query'
+                  },
+                  {
+                    label: 'Raw Query',
+                    value: 'raw_query'
+                  }
 
-                <label className="font-bold">Search Type</label>
+                ]}
+              />
+            )}
+          />
+          <div className={`${watchField.query_type === "filter_query" ? "d-block" : "d-none"}`}>
+
+            <h1 className='font-semibold text-lg'>Filter Record</h1>
+            <div className='grid md:gap-3  items-end'>
+              <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-3 d-flex '>
+                <div className='form-group'>
+
+                  <label className="font-bold">Search Type</label>
+
+                  <Controller
+                    control={control}
+                    name="search_type"
+                    {...register("search_type")}
+                    defaultValue={_search_type || "Any Word"}
+                    render={({ field }) => (
+                      <Select
+                        title='Search Type'
+                        {...field}
+                        style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
+                        placeholder="Please select search type"
+                        options={[
+                          {
+                            label: 'Any Word',
+                            value: 'Any Word'
+                          },
+                          {
+                            label: 'Exact Phrase',
+                            value: 'Exact Phrase'
+                          },
+                          {
+                            label: 'Relevent Word',
+                            value: 'Relevent Word'
+                          }
+                        ]}
+                      />
+                    )}
+                  />
+                </div>
+                <div className="form-group mb-6">
+                  <label className="font-bold">Search</label>
+                  {/* <span className='text-red-600 md:ml-4'>{errors?.keywords?.message}</span> */}
+                  <input type="text" className={inputClass} name="keywords" {...register("keywords")}
+                    aria-describedby="keywords" placeholder="search" defaultValue={_keyword} />
+                </div>
+                <div className="form-group mb-6">
+                  <label className="font-bold">Exclude Words</label>
+                  {/* <span className='text-red-600 md:ml-4'>{errors?.keywords?.message}</span> */}
+                  <input type="text" className={inputClass} name="exclude_words" {...register("exclude_words")}
+                    aria-describedby="exclude_keywords" placeholder="Exclude Word" />
+                </div>
+              </div>
+
+              <div className='grid md:grid-cols-2 lg:grid-cols-3 md:gap-3'>
+                <Controller
+                  control={control}
+                  name="cpv_codes"
+                  {...register("cpv_codes")}
+                  render={({ field }) => (
+                    <Select
+                      title='Cpv Codes'
+                      {...field}
+                      // defaultValue={_cpv_codes}
+                      mode="multiple"
+                      allowClear
+                      style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
+                      placeholder="Please select cpv code"
+                      onDeselect={(val) => OnResetFilter('cpv_codes')}
+                      onChange={(value) => { setValue("cpv_codes", value); OnResetFilter('cpv_codes') }}
+                      onSearch={value => OnChangeFilter("cpv_codes", value)}
+                      options={cpv_codes}
+                    />
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="sectors"
+                  {...register("sectors")}
+                  render={({ field }) => (
+                    <Select
+                      {...field}
+                      title='Sectors'
+                      defaultValue={_sectors}
+                      mode="multiple"
+                      allowClear
+                      style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
+                      placeholder="Please select sectors"
+                      onDeselect={(val) => OnResetFilter('sectors')}
+                      onChange={(value) => { setValue("sectors", value); OnResetFilter('sectors') }}
+                      onSearch={value => OnChangeFilter("sectors", value)}
+                      options={sectors}
+                    />
+                  )}
+                />
 
                 <Controller
                   control={control}
-                  name="search_type"
-                  {...register("search_type")}
-                  defaultValue={_search_type || "Any Word"}
+                  name="regions"
+                  {...register("regions")}
                   render={({ field }) => (
                     <Select
-                      title='Search Type'
                       {...field}
+                      title='Regions'
+                      mode="multiple"
+                      allowClear
                       style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
-                      placeholder="Please select search type"
-                      options={[
-                        {
-                          label: 'Any Word',
-                          value: 'Any Word'
-                        },
-                        {
-                          label: 'Exact Phrase',
-                          value: 'Exact Phrase'
-                        },
-                        {
-                          label: 'Relevent Word',
-                          value: 'Relevent Word'
-                        }
-                      ]}
+                      placeholder="Please select regions"
+                      onDeselect={(val) => OnResetFilter('regions')}
+                      onChange={(value) => { setValue("regions", value); OnResetFilter('regions') }}
+                      onSearch={value => OnChangeFilter("regions", value)}
+                      options={regions}
+                    />
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="funding_agency"
+                  {...register("funding_agency")}
+                  render={({ field }) => (
+                    <Select
+                      {...field}
+                      title='Funding Agency'
+                      mode="multiple"
+                      allowClear
+                      style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
+                      placeholder="Please select funding_agency"
+                      onDeselect={(val) => OnResetFilter('funding_agency')}
+                      onChange={(value) => { setValue("funding_agency", value); OnResetFilter('funding_agency') }}
+                      onSearch={value => OnChangeFilter("funding_agency", value)}
+                      options={funding}
+                    />
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="country"
+                  {...register("country")}
+                  render={({ field }) => (
+                    <Select
+                      {...field}
+                      title='Country'
+                      mode="multiple"
+                      allowClear
+                      style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
+                      placeholder="Please select country"
+                      onDeselect={(val) => OnResetFilter('country')}
+                      onChange={(value) => { setValue("country", value); OnResetFilter('country') }}
+                      onSearch={value => OnChangeFilter("country", value)}
+                      options={countries}
                     />
                   )}
                 />
               </div>
-              <div className="form-group mb-6">
-                <label className="font-bold">Search</label>
-                {/* <span className='text-red-600 md:ml-4'>{errors?.keywords?.message}</span> */}
-                <input type="text" className={inputClass} name="keywords" {...register("keywords")}
-                  aria-describedby="keywords" placeholder="search" defaultValue={_keyword} />
-              </div>
-              <div className="form-group mb-6">
-                <label className="font-bold">Exclude Words</label>
-                {/* <span className='text-red-600 md:ml-4'>{errors?.keywords?.message}</span> */}
-                <input type="text" className={inputClass} name="exclude_words" {...register("exclude_words")}
-                  aria-describedby="exclude_keywords" placeholder="Exclude Word" />
-              </div>
-            </div>
 
-            <div className='grid md:grid-cols-2 lg:grid-cols-3 md:gap-3'>
-              <Controller
-                control={control}
-                name="cpv_codes"
-                {...register("cpv_codes")}
-                render={({ field }) => (
-                  <Select
-                    title='Cpv Codes'
-                    {...field}
-                    // defaultValue={_cpv_codes}
-                    mode="multiple"
-                    allowClear
-                    style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
-                    placeholder="Please select cpv code"
-                    onDeselect={(val) => OnResetFilter('cpv_codes')}
-                    onChange={(value) => { setValue("cpv_codes", value); OnResetFilter('cpv_codes') }}
-                    onSearch={value => OnChangeFilter("cpv_codes", value)}
-                    options={cpv_codes}
-                  />
-                )}
-              />
-              <Controller
-                control={control}
-                name="sectors"
-                {...register("sectors")}
-                render={({ field }) => (
-                  <Select
-                    {...field}
-                    title='Sectors'
-                    defaultValue={_sectors}
-                    mode="multiple"
-                    allowClear
-                    style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
-                    placeholder="Please select sectors"
-                    onDeselect={(val) => OnResetFilter('sectors')}
-                    onChange={(value) => { setValue("sectors", value); OnResetFilter('sectors') }}
-                    onSearch={value => OnChangeFilter("sectors", value)}
-                    options={sectors}
-                  />
-                )}
-              />
+              <div className='grid md:grid-cols-2 gap-3'>
 
-              <Controller
-                control={control}
-                name="regions"
-                {...register("regions")}
-                render={({ field }) => (
-                  <Select
-                    {...field}
-                    title='Regions'
-                    mode="multiple"
-                    allowClear
-                    style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
-                    placeholder="Please select regions"
-                    onDeselect={(val) => OnResetFilter('regions')}
-                    onChange={(value) => { setValue("regions", value); OnResetFilter('regions') }}
-                    onSearch={value => OnChangeFilter("regions", value)}
-                    options={regions}
-                  />
-                )}
-              />
-              <Controller
-                control={control}
-                name="funding_agency"
-                {...register("funding_agency")}
-                render={({ field }) => (
-                  <Select
-                    {...field}
-                    title='Funding Agency'
-                    mode="multiple"
-                    allowClear
-                    style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
-                    placeholder="Please select funding_agency"
-                    onDeselect={(val) => OnResetFilter('funding_agency')}
-                    onChange={(value) => { setValue("funding_agency", value); OnResetFilter('funding_agency') }}
-                    onSearch={value => OnChangeFilter("funding_agency", value)}
-                    options={funding}
-                  />
-                )}
-              />
-              <Controller
-                control={control}
-                name="country"
-                {...register("country")}
-                render={({ field }) => (
-                  <Select
-                    {...field}
-                    title='Country'
-                    mode="multiple"
-                    allowClear
-                    style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
-                    placeholder="Please select country"
-                    onDeselect={(val) => OnResetFilter('country')}
-                    onChange={(value) => { setValue("country", value); OnResetFilter('country') }}
-                    onSearch={value => OnChangeFilter("country", value)}
-                    options={countries}
-                  />
-                )}
-              />
-            </div>
-
-            <div className='grid md:grid-cols-2 gap-3'>
-
-              <RangePicker
-                // showTime={{
-                //   format: 'YYYY-MM-DD',
-                // }}
-                // format="YYYY-MM-DD"
-                value={
-                  watchField.from_date && watchField.to_date
-                    ? [moment(watchField.from_date, 'YYYY-MM-DD'), moment(watchField.to_date, 'YYYY-MM-DD')]
-                    : null
-                }
-                style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
-                // onOk={handleDateRange}
-                onChange={handleDateRange}
-              />
-
-              <div className="form-group mb-6">
-                <input
-                  type="submit"
-                  className={`${inputClass} hover:ring-1 focus:ring-1 hover:text-blue-400 focus:text-blue-400 cursor-pointer`}
-                  value={'Filter'}
+                <RangePicker
+                  // showTime={{
+                  //   format: 'YYYY-MM-DD',
+                  // }}
+                  // format="YYYY-MM-DD"
+                  value={
+                    watchField.from_date && watchField.to_date
+                      ? [moment(watchField.from_date, 'YYYY-MM-DD'), moment(watchField.to_date, 'YYYY-MM-DD')]
+                      : null
+                  }
+                  style={{ width: '100%', marginBottom: '25px', padding: '5px' }}
+                  // onOk={handleDateRange}
+                  onChange={handleDateRange}
                 />
+
+                <div className="form-group mb-6">
+                  <input
+                    type="submit"
+                    className={`${inputClass} hover:ring-1 focus:ring-1 hover:text-blue-400 focus:text-blue-400 cursor-pointer`}
+                    value={'Filter'}
+                  />
+                </div>
+              </div>
+              <div className='grid md:grid-cols-1 lg:grid-cols-1 gap-3 d-flex '>
+
+                {query ?
+                  <>
+                    <div className="form-group ">
+                      <label className="font-bold">Raw Query</label>
+                      {/* <span className='text-red-600 md:ml-4'>{errors?.keywords?.message}</span> */}
+                      <textarea type="text" className={inputClass} value={query}
+
+                        aria-describedby="exclude_keywords" placeholder="Raw Query" />
+                    </div>
+                    <div className="form-group mb-6">
+                      <div
+
+                        className={`${inputClass} hover:ring-1 focus:ring-1 hover:text-blue-400 focus:text-blue-400 cursor-pointer`}
+                        style={{ textAlign: "center" }}
+                        onClick={() => { navigator.clipboard.writeText(query); toast.success("copied") }}
+                      >
+                        Copy Query
+                      </div>
+                    </div>
+                  </>
+                  : ""
+                }
               </div>
             </div>
-            <div className='grid md:grid-cols-1 lg:grid-cols-1 gap-3 d-flex '>
+          </div>
+          <div className={`${watchField.query_type === "raw_query" ? "d-block" : "d-none"}`}>
 
-              {query ?
-                <div className="form-group mb-6">
-                  <label className="font-bold">Raw Query</label>
+            <h1 className='font-semibold text-lg'>Raw query</h1>
+            <div className='grid md:gap-3  items-end'>
+
+              <div className='grid md:grid-cols-1 lg:grid-cols-1 gap-3 d-flex '>
+
+
+                <div className="form-group ">
+                  {/* <label className="font-bold">Raw Query</label> */}
                   {/* <span className='text-red-600 md:ml-4'>{errors?.keywords?.message}</span> */}
-                  <textarea type="text" className={inputClass} value={query}
+                  <textarea type="text" className={inputClass}    {...register("raw_query")} required={watchField.query_type === "raw_query"}
                     aria-describedby="exclude_keywords" placeholder="Raw Query" />
-                </div> : ""
-              }
+                </div>
+
+                <div className="form-group mb-6">
+                  <input
+                    type="submit"
+                    className={`${inputClass} hover:ring-1 focus:ring-1 hover:text-blue-400 focus:text-blue-400 cursor-pointer`}
+                    value={'Filter'}
+                  />
+                </div>
+              </div>
             </div>
+          </div>
+          <div>
+
           </div>
         </form>
       </div>
@@ -921,7 +1408,7 @@ export default function ActivationPanel({ props }) {
           loading={Tender.loading}
           pagination={{ pageSizeOptions: ['5', '10', '30', '50', '100'], defaultPageSize: 5, showSizeChanger: true, ...pagination }}
           dataSource={Tender.records}
-          columns={columns}
+          columns={tenderColumns}
           // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
           scroll={{ y: 430 }}
           onChange={onChange_table}
@@ -932,7 +1419,7 @@ export default function ActivationPanel({ props }) {
           loading={Project.loading}
           pagination={{ pageSizeOptions: ['5', '10', '30', '50', '100'], defaultPageSize: 5, showSizeChanger: true, ...pagination }}
           dataSource={Project.records}
-          columns={columns}
+          columns={projectColumns}
           // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
           scroll={{ y: 430 }}
           onChange={onChange_table}
@@ -943,7 +1430,7 @@ export default function ActivationPanel({ props }) {
           loading={Contract.loading}
           pagination={{ pageSizeOptions: ['5', '10', '30', '50', '100'], defaultPageSize: 5, showSizeChanger: true, ...pagination }}
           dataSource={Contract.records}
-          columns={columns}
+          columns={contractAwardsColumns}
           // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
           scroll={{ y: 430 }}
           onChange={onChange_table}
@@ -954,7 +1441,7 @@ export default function ActivationPanel({ props }) {
           loading={Grant.loading}
           pagination={{ pageSizeOptions: ['5', '10', '30', '50', '100'], defaultPageSize: 5, showSizeChanger: true, ...pagination }}
           dataSource={Grant.records}
-          columns={columns}
+          columns={grantColumns}
           // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
           scroll={{ y: 430 }}
           onChange={onChange_table}
