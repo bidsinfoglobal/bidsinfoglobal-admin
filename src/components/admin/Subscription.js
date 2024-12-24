@@ -60,6 +60,11 @@ export default function Subscription() {
           <p>Plan Id: {record?.planData?.plan_id}</p>
           <p>Plan Name: {record?.planData?.plan_name}</p>
           <p>Expire Date: {record?.planData?.title}</p>
+          <p>Data Type: {record?.formData?.dataType}</p>
+          <p>Data Delivery Type: {record?.formData?.dataDeliveryType}</p>
+          <p>Data Category: {record?.formData?.dataCategory}</p>
+          <p>Number of Email Alerts: {record?.formData?.emailAlerts}</p>
+          <p>Number of user Id: {record?.formData?.userId}</p>
           <p> {record?.categories?.length > 0 ? "Selected Category: " + record?.categories.join(", ") : null}</p>
         </div>
       )
