@@ -15,6 +15,7 @@ import fundingSlice from './slice/funding_agency.slice';
 import customerSlice from './slice/customer.slice';
 import customerReport from './slice/customer-reports.slice';
 import subscriptionSlice from './slice/subscription.slice';
+import  citySlice  from './slice/city.slice';
 
 export const store = configureStore({
     reducer: {
@@ -25,6 +26,7 @@ export const store = configureStore({
         state: stateSlice,
         region: regionSlice,
         sector: sectorSlice,
+        city: citySlice,
         cpvcode: cpvcodeSlice,
         grant: grantSlice,
         contract: contractawardSlice,

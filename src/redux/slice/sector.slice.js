@@ -94,7 +94,7 @@ const deleteSectorRecord = createAsyncThunk(
 )
 
 export const sectorSlice = createSlice({
-  name: 'sector',
+  name: 'sectodr',
   initialState,
   reducers: {
   },

@@ -38,6 +38,7 @@ import Subscription from "./components/admin/Subscription";
 import CustomerReports from "./components/admin/CustomerReports";
 import DailyReports from "./components/admin/DailyReports";
 import { userRoles } from "./utils/roles";
+import CityMaster from "./components/admin/master/CityMaster";
 
 
 const icon = {
@@ -212,6 +213,14 @@ export const routes = [
                         name: "States",
                         path: "/master/state",
                         element: <StateMaster />,
+                        // isSideBar: true
+                    },
+                    {
+                        key: '86',
+                        icon: <SecurityScanOutlined {...icon} />,
+                        name: "Cities",
+                        path: "/master/city",
+                        element: <CityMaster />,
                         // isSideBar: true
                     },
                     {
