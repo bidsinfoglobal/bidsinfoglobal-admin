@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit'
+import { configureStore } from '@reduxjs/toolkit';
 import userSlice from './slice/user.slice';
 import serviceSlice from './slice/service.slice';
 import eprocurmentSlice from './slice/eprocurment.slice';
@@ -15,7 +15,7 @@ import fundingSlice from './slice/funding_agency.slice';
 import customerSlice from './slice/customer.slice';
 import customerReport from './slice/customer-reports.slice';
 import subscriptionSlice from './slice/subscription.slice';
-import  citySlice  from './slice/city.slice';
+import citySlice from './slice/city.slice';
 
 export const store = configureStore({
     reducer: {
@@ -35,8 +35,8 @@ export const store = configureStore({
         funding: fundingSlice,
         customer: customerSlice,
         subscription: subscriptionSlice,
-        customer_report: customerReport
-    }
-})
+        customer_report: customerReport,
+    },
+});
 
 export default store;

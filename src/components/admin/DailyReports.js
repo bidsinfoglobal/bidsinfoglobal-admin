@@ -1,11 +1,15 @@
-import { Button, Modal, Table } from 'antd'
-import React, { useEffect, useState } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import { fetchCustomerRecords, changeCustomerParameter, generateCustomerReport } from '../../redux/slice/customer-reports.slice'
-import { useNavigate } from 'react-router-dom'
-import { EditFilled, PlusOutlined } from '@ant-design/icons'
-import { useForm } from 'react-hook-form'
-import moment from 'moment'
+import { Button, Modal, Table } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+    fetchCustomerRecords,
+    changeCustomerParameter,
+    generateCustomerReport,
+} from '../../redux/slice/customer-reports.slice';
+import { useNavigate } from 'react-router-dom';
+import { EditFilled, PlusOutlined } from '@ant-design/icons';
+import { useForm } from 'react-hook-form';
+import moment from 'moment';
 
 const inputClass = `form-control
 block
@@ -24,115 +28,146 @@ m-0
 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none`;
 
 export default function DailyReports() {
-  const Customer = useSelector((state) => state.customer_report)
-  const dispatch = useDispatch();
-  const [pagination, setPagination] = React.useState({
-    current: 1,
-    pageSize: 5,
-    total: 0,
-    sort: { '_id': -1 }
-  });
+    const Customer = useSelector((state) => state.customer_report);
+    const dispatch = useDispatch();
+    const [pagination, setPagination] = React.useState({
+        current: 1,
+        pageSize: 5,
+        total: 0,
+        sort: { _id: -1 },
+    });
 
-  useEffect(() => {
-    setPagination({
-      current: Customer.pageNo + 1,
-      pageSize: Customer.limit,
-      total: Customer.count,
-      sort: { [`${Customer.sortField}`]: Customer.sortBy }
-    })
-    fetchRecord({ pageNo: Customer.pageNo, limit: Customer.limit, sortBy: Customer.sortBy, sortField: Customer.sortField, keywords: Customer.keywords, from_date: Customer.from_date, to_date: Customer.to_date })
-  }, [])
+    useEffect(() => {
+        setPagination({
+            current: Customer.pageNo + 1,
+            pageSize: Customer.limit,
+            total: Customer.count,
+            sort: { [`${Customer.sortField}`]: Customer.sortBy },
+        });
+        fetchRecord({
+            pageNo: Customer.pageNo,
+            limit: Customer.limit,
+            sortBy: Customer.sortBy,
+            sortField: Customer.sortField,
+            keywords: Customer.keywords,
+            from_date: Customer.from_date,
+            to_date: Customer.to_date,
+        });
+    }, []);
 
-  useEffect(() => {
-    setPagination({
-      ...pagination,
-      total: Customer.count
-    })
-  }, [Customer.count])
+    useEffect(() => {
+        setPagination({
+            ...pagination,
+            total: Customer.count,
+        });
+    }, [Customer.count]);
 
-  function fetchRecord({ pageNo, limit, sortBy, sortField, keywords, from_date, to_date }) {
-    dispatch(fetchCustomerRecords({ pageNo, limit, sortBy, sortField, keywords, type: "Daily" }));
-  }
-
-
-  const onChange_table = (paginate, filter, sorter, extra) => {
-    // console.log({paginate, filter, sorter, extra})
-    paginate.total = Customer.count;
-    paginate.sort = {};
-
-    if (extra.action == "sort") {
-      paginate.sort[`${sorter.field}`] = sorter.order == 'ascent' ? 1 : -1;
+    function fetchRecord({
+        pageNo,
+        limit,
+        sortBy,
+        sortField,
+        keywords,
+        from_date,
+        to_date,
+    }) {
+        dispatch(
+            fetchCustomerRecords({
+                pageNo,
+                limit,
+                sortBy,
+                sortField,
+                keywords,
+                type: 'Daily',
+            }),
+        );
     }
-    else {
-      paginate.sort = pagination.sort;
-    }
-    setPagination(paginate);
-    console.log('paginate', paginate);
-    // dispatch(changeCustomerParameter({ pageNo: paginate.current-1, limit: paginate.pageSize, sortBy: paginate.sort[Object.keys(paginate.sort)[0]], sortField: Object.keys(paginate.sort)[0] }))
-    dispatch(fetchCustomerRecords({ pageNo: paginate.current - 1, limit: paginate.pageSize, sortBy: paginate.sort[Object.keys(paginate.sort)[0]], sortField: Object.keys(paginate.sort)[0], keywords: Customer.keywords }));
-  }
 
+    const onChange_table = (paginate, filter, sorter, extra) => {
+        // console.log({paginate, filter, sorter, extra})
+        paginate.total = Customer.count;
+        paginate.sort = {};
 
-  const columns = [
-    {
-      title: 'Type',
-      dataIndex: 'type',
-      key: 'type',
-      fixed: 'left',
-      width: 200,
-      sorter: (a, b) => a.type - b.type
-    },
-    {
-      title: 'From Date',
-      dataIndex: 'from_date',
-      key: 'from_date',
-      width: 150,
-      sorter: (a, b) => a.from_date - b.from_date
-    },
-    {
-      title: 'To Date',
-      dataIndex: 'to_date',
-      key: 'to_date',
-      width: 150,
-      sorter: (a, b) => a.to_date - b.to_date
-    },
-    {
-      title: 'Generated At',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 150,
-      sorter: (a, b) => a.createdAt - b.createdAt
-    },
-    {
-      title: 'Download',
-      dataIndex: 'download_url',
-      key: 'download_url',
-      width: 150,
-      sorter: (a, b) => a.download_url - b.download_url,
-      render: (e, _) => <a href={e} target='_blank'>Download</a>
-    },
-  ];
+        if (extra.action == 'sort') {
+            paginate.sort[`${sorter.field}`] = sorter.order == 'ascent' ? 1 : -1;
+        } else {
+            paginate.sort = pagination.sort;
+        }
+        setPagination(paginate);
+        console.log('paginate', paginate);
+        // dispatch(changeCustomerParameter({ pageNo: paginate.current-1, limit: paginate.pageSize, sortBy: paginate.sort[Object.keys(paginate.sort)[0]], sortField: Object.keys(paginate.sort)[0] }))
+        dispatch(
+            fetchCustomerRecords({
+                pageNo: paginate.current - 1,
+                limit: paginate.pageSize,
+                sortBy: paginate.sort[Object.keys(paginate.sort)[0]],
+                sortField: Object.keys(paginate.sort)[0],
+                keywords: Customer.keywords,
+            }),
+        );
+    };
 
+    const columns = [
+        {
+            title: 'Type',
+            dataIndex: 'type',
+            key: 'type',
+            fixed: 'left',
+            width: 200,
+            sorter: (a, b) => a.type - b.type,
+        },
+        {
+            title: 'From Date',
+            dataIndex: 'from_date',
+            key: 'from_date',
+            width: 150,
+            sorter: (a, b) => a.from_date - b.from_date,
+        },
+        {
+            title: 'To Date',
+            dataIndex: 'to_date',
+            key: 'to_date',
+            width: 150,
+            sorter: (a, b) => a.to_date - b.to_date,
+        },
+        {
+            title: 'Generated At',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+            width: 150,
+            sorter: (a, b) => a.createdAt - b.createdAt,
+        },
+        {
+            title: 'Download',
+            dataIndex: 'download_url',
+            key: 'download_url',
+            width: 150,
+            sorter: (a, b) => a.download_url - b.download_url,
+            render: (e, _) => (
+                <a href={e} target="_blank">
+                    Download
+                </a>
+            ),
+        },
+    ];
 
-  return (
-    <div>
-      <div className='flex items-center justify-between mb-4'>
-        <h1 className='text-xl'>Daily Reports</h1>
-      </div>
-      <Table
-        loading={Customer.loading}
-        // pagination={{ ...pagination, pageSizeOptions: ['5', '10', '30', '50', '100'], defaultPageSize: 5, showSizeChanger: true }}
-        dataSource={Customer.records}
-        columns={columns}
-        // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
-        scroll={{ y: 430 }}
-        onChange={onChange_table}
-      />
-    </div>
-  )
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-4">
+                <h1 className="text-xl">Daily Reports</h1>
+            </div>
+            <Table
+                loading={Customer.loading}
+                // pagination={{ ...pagination, pageSizeOptions: ['5', '10', '30', '50', '100'], defaultPageSize: 5, showSizeChanger: true }}
+                dataSource={Customer.records}
+                columns={columns}
+                // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
+                scroll={{ y: 430 }}
+                onChange={onChange_table}
+            />
+        </div>
+    );
 }
-
-
 
 // function ManagerModel({ id, _customer, submitHandler }) {
 //   const [open, setOpen] = useState(false);

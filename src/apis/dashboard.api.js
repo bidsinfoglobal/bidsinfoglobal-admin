@@ -1,4 +1,4 @@
-import { axios } from "./axios";
+import { axios } from './axios';
 
 /**
  * fetch all function.
@@ -11,7 +11,7 @@ export const fetchDashboardData = async () => {
             var response = await axios.get('/common/dashboard');
             res(response.data.result);
         } catch (error) {
-            rej(error)
+            rej(error);
         }
-    })
-}
+    });
+};

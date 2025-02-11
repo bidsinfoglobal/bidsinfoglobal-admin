@@ -1,10 +1,16 @@
-import { DeleteOutlined, EditFilled, PlusOutlined } from '@ant-design/icons'
-import { Button, Modal, Switch, Table } from 'antd'
-import React, { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { useSelector, useDispatch } from 'react-redux'
-import { fetchStateRecords, insertStateRecord, updateStateRecord, deleteStateRecord, changeStateParameter } from '../../../redux/slice/state.slice'
-import moment from 'moment'
+import { DeleteOutlined, EditFilled, PlusOutlined } from '@ant-design/icons';
+import { Button, Modal, Switch, Table } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+    fetchStateRecords,
+    insertStateRecord,
+    updateStateRecord,
+    deleteStateRecord,
+    changeStateParameter,
+} from '../../../redux/slice/state.slice';
+import moment from 'moment';
 
 const inputClass = `form-control
 block
@@ -23,65 +29,82 @@ m-0
 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none`;
 
 export default function StateMaster() {
-    const State = useSelector((state) => state.state)
-    const dispatch = useDispatch()
+    const State = useSelector((state) => state.state);
+    const dispatch = useDispatch();
 
     const [pagination, setPagination] = React.useState({
         current: 1,
         pageSize: 5,
         total: 0,
-        sort: { '_id': 1 }
+        sort: { _id: 1 },
     });
 
     useEffect(() => {
-      setPagination({
-        current: State.pageNo+1,
-        pageSize: State.limit,
-        total: State.count,
-        sort: { [`${State.sortField || "_id"}`]: State.sortBy }
-      })
-        fetchRecord({pageNo: State.pageNo, limit: State.limit, sortBy: State.sortBy, sortField: State.sortField || "_id", keywords: State.keywords})
-    }, [])
+        setPagination({
+            current: State.pageNo + 1,
+            pageSize: State.limit,
+            total: State.count,
+            sort: { [`${State.sortField || '_id'}`]: State.sortBy },
+        });
+        fetchRecord({
+            pageNo: State.pageNo,
+            limit: State.limit,
+            sortBy: State.sortBy,
+            sortField: State.sortField || '_id',
+            keywords: State.keywords,
+        });
+    }, []);
 
     useEffect(() => {
-      setPagination({
-        ...pagination,
-        total: State.count
-      })
-    }, [State.count])
+        setPagination({
+            ...pagination,
+            total: State.count,
+        });
+    }, [State.count]);
 
-    function fetchRecord({pageNo, limit, sortBy, sortField, keywords}) {
-      dispatch(fetchStateRecords({ pageNo, limit, sortBy, sortField, keywords }));
-
+    function fetchRecord({ pageNo, limit, sortBy, sortField, keywords }) {
+        dispatch(fetchStateRecords({ pageNo, limit, sortBy, sortField, keywords }));
     }
 
     const handleDeleteSlide = (id) => {
         dispatch(deleteStateRecord({ id }));
         setTimeout(() => {
-          fetchRecord({ pageNo: State.pageNo, limit: State.limit, sortBy: State.sortBy, sortField: State.sortField || "_id", keywords: State.keywords })
-          // dispatch(fetchStateRecords({ pageNo: State.pageNo, limit: State.limit, sortBy: State.sortBy, sortField: State.sortField || "_id", keywords: State.keywords }));
+            fetchRecord({
+                pageNo: State.pageNo,
+                limit: State.limit,
+                sortBy: State.sortBy,
+                sortField: State.sortField || '_id',
+                keywords: State.keywords,
+            });
+            // dispatch(fetchStateRecords({ pageNo: State.pageNo, limit: State.limit, sortBy: State.sortBy, sortField: State.sortField || "_id", keywords: State.keywords }));
         }, 100);
-    }
+    };
 
     const handleStateSubmit = async (data, id, setOpen) => {
-      try {
-          if(id) {
-            data._id = id;
-            await dispatch(updateStateRecord(data));
-          }
-          else {
-            await dispatch(insertStateRecord(data));
-          }
-          
-          setTimeout(() => {
-            dispatch(fetchStateRecords({ pageNo: State.pageNo, limit: State.limit, sortBy: State.sortBy, sortField: State.sortField || "_id", keywords: State.keywords }));
-          }, 100);
-          setOpen(() => false);
-      }
-      catch (err) {
-          alert(err.message)
-      }
-  }
+        try {
+            if (id) {
+                data._id = id;
+                await dispatch(updateStateRecord(data));
+            } else {
+                await dispatch(insertStateRecord(data));
+            }
+
+            setTimeout(() => {
+                dispatch(
+                    fetchStateRecords({
+                        pageNo: State.pageNo,
+                        limit: State.limit,
+                        sortBy: State.sortBy,
+                        sortField: State.sortField || '_id',
+                        keywords: State.keywords,
+                    }),
+                );
+            }, 100);
+            setOpen(() => false);
+        } catch (err) {
+            alert(err.message);
+        }
+    };
 
     const handleStatusChange = async (checked, id) => {
         try {
@@ -92,29 +115,41 @@ export default function StateMaster() {
             //     return s;
             // })
             // setSlides(_slides);
+        } catch (err) {
+            alert(err.message);
         }
-        catch (err) {
-            alert(err.message)
-        }
-    }
+    };
 
     const onChange_table = (paginate, filter, sorter, extra) => {
         // console.log({paginate, filter, sorter, extra})
         paginate.total = State.count;
         paginate.sort = {};
-  
-        if(extra.action == "sort") {
-          paginate.sort[`${sorter.field || "_id"}`] = sorter.order == 'ascend' ? 1 : -1;
-        }
-        else {
-          paginate.sort = pagination.sort;
+
+        if (extra.action == 'sort') {
+            paginate.sort[`${sorter.field || '_id'}`] = sorter.order == 'ascend' ? 1 : -1;
+        } else {
+            paginate.sort = pagination.sort;
         }
         setPagination(paginate);
         console.log('paginate', paginate);
-        dispatch(changeStateParameter({ pageNo: paginate.current-1, limit: paginate.pageSize, sortBy: sorter.order == 'ascend' ? 1 : -1, sortField: sorter.field || "_id" }))
-        dispatch(fetchStateRecords({ pageNo: paginate.current-1, limit: paginate.pageSize, sortBy: sorter.order == 'ascend' ? 1 : -1, sortField: sorter.field || "_id", keywords: State.keywords }));
-      }
-
+        dispatch(
+            changeStateParameter({
+                pageNo: paginate.current - 1,
+                limit: paginate.pageSize,
+                sortBy: sorter.order == 'ascend' ? 1 : -1,
+                sortField: sorter.field || '_id',
+            }),
+        );
+        dispatch(
+            fetchStateRecords({
+                pageNo: paginate.current - 1,
+                limit: paginate.pageSize,
+                sortBy: sorter.order == 'ascend' ? 1 : -1,
+                sortField: sorter.field || '_id',
+                keywords: State.keywords,
+            }),
+        );
+    };
 
     const columns = [
         // {
@@ -133,13 +168,13 @@ export default function StateMaster() {
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
-            sorter: (a, b) => a.name - b.name
+            sorter: (a, b) => a.name - b.name,
         },
         {
-          title: 'Code',
-          dataIndex: 'code',
-          key: 'code',
-          sorter: (a, b) => a.code - b.code
+            title: 'Code',
+            dataIndex: 'code',
+            key: 'code',
+            sorter: (a, b) => a.code - b.code,
         },
         // {
         //     title: 'Status',
@@ -151,59 +186,92 @@ export default function StateMaster() {
         //     </div>
         // },
         {
-          title: 'Date',
-          dataIndex: 'createdAt',
-          key: 'createdAt',
-          render: (e, record) => moment(e).format('MMMM Do YYYY, h:mm:ss a'),
-          sorter: (a, b) => a.createdAt - b.createdAt
+            title: 'Date',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+            render: (e, record) => moment(e).format('MMMM Do YYYY, h:mm:ss a'),
+            sorter: (a, b) => a.createdAt - b.createdAt,
         },
         {
             title: 'Action',
-            dataIndex: 'Action',  
+            dataIndex: 'Action',
             key: 'Action',
             width: '150px',
-            render: (e, record) => <div className="flex gap-2" key={record._id}>
-                <ManagerModel key={record._id} id={record._id} submitHandler={handleStateSubmit} _state={record} />
-                <Button title="Delete" icon={<DeleteOutlined />} onClick={() => handleDeleteSlide(record._id)}></Button>
-            </div>
-        }
+            render: (e, record) => (
+                <div className="flex gap-2" key={record._id}>
+                    <ManagerModel
+                        key={record._id}
+                        id={record._id}
+                        submitHandler={handleStateSubmit}
+                        _state={record}
+                    />
+                    <Button
+                        title="Delete"
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleDeleteSlide(record._id)}
+                    ></Button>
+                </div>
+            ),
+        },
     ];
 
-
-  return (
-    <div>
-        <div className='flex items-center justify-between mb-4'>
-            <h1 className='text-xl'>States</h1>
-            {/* <input className={`${inputClass} w-1/2`} onChange={(e) => console.log(e.target.value)} placeholder='Search' /> */}
-            <ManagerModel submitHandler={handleStateSubmit} />
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-4">
+                <h1 className="text-xl">States</h1>
+                {/* <input className={`${inputClass} w-1/2`} onChange={(e) => console.log(e.target.value)} placeholder='Search' /> */}
+                <ManagerModel submitHandler={handleStateSubmit} />
+            </div>
+            <Table
+                loading={State.loading}
+                pagination={{
+                    ...pagination,
+                    pageSizeOptions: ['5', '10', '30', '50', '100'],
+                    defaultPageSize: 5,
+                    showSizeChanger: true,
+                }}
+                dataSource={State.records}
+                columns={columns}
+                // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
+                scroll={{ y: 430 }}
+                onChange={onChange_table}
+            />
         </div>
-        <Table
-        loading={State.loading}
-        pagination={{ ...pagination, pageSizeOptions: ['5', '10', '30', '50', '100'], defaultPageSize: 5, showSizeChanger: true }}
-        dataSource={State.records}
-        columns={columns}
-        // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
-        scroll={{ y: 430 }}
-        onChange={onChange_table}
-        />
-    </div>
-  )
+    );
 }
-
 
 function ManagerModel({ id, _state, submitHandler }) {
     const [open, setOpen] = useState(false);
-    const { register, handleSubmit, formState: { errors }, setError } = useForm();
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+        setError,
+    } = useForm();
 
     const onSubmit = (body) => {
-        submitHandler(body, id, setOpen)
-    }
+        submitHandler(body, id, setOpen);
+    };
 
     return (
         <div className="">
-            <Button className={!id ? 'float-right mb-2' : ''} title={(id ? "Edit" : "Add")} icon={id ? <EditFilled /> : <PlusOutlined />} onClick={() => setOpen(true)}>{id ? '' : 'Add'}</Button>
+            <Button
+                className={!id ? 'float-right mb-2' : ''}
+                title={id ? 'Edit' : 'Add'}
+                icon={id ? <EditFilled /> : <PlusOutlined />}
+                onClick={() => setOpen(true)}
+            >
+                {id ? '' : 'Add'}
+            </Button>
 
-            <Modal centered title={(id ? "Edit" : "Add") + " State"} open={open} onOk={() => setOpen(false)} footer={false} onCancel={() => setOpen(false)}>
+            <Modal
+                centered
+                title={(id ? 'Edit' : 'Add') + ' State'}
+                open={open}
+                onOk={() => setOpen(false)}
+                footer={false}
+                onCancel={() => setOpen(false)}
+            >
                 <div>
                     <form onSubmit={handleSubmit(onSubmit)}>
                         {/* <div className="form-group mb-6">
@@ -213,23 +281,50 @@ function ManagerModel({ id, _state, submitHandler }) {
                                 aria-describedby="country_name" placeholder="country_name" defaultValue={_state?.country_name || ''} />
                         </div> */}
                         <div className="form-group mb-6">
-                            <label className="font-bold">Name <span className='text-red-600'>*</span></label>
-                            <span className='text-red-600 md:ml-4'>{errors?.name?.message}</span>
-                            <input type="text" className={inputClass} name="name" {...register("name", { required: 'field is required' })}
-                                aria-describedby="name" placeholder="name" defaultValue={_state?.name || ''} />
+                            <label className="font-bold">
+                                Name <span className="text-red-600">*</span>
+                            </label>
+                            <span className="text-red-600 md:ml-4">
+                                {errors?.name?.message}
+                            </span>
+                            <input
+                                type="text"
+                                className={inputClass}
+                                name="name"
+                                {...register('name', { required: 'field is required' })}
+                                aria-describedby="name"
+                                placeholder="name"
+                                defaultValue={_state?.name || ''}
+                            />
                         </div>
                         <div className="form-group mb-6">
-                            <label className="font-bold">Code <span className='text-red-600'>*</span></label>
-                            <span className='text-red-600 md:ml-4'>{errors?.code?.message}</span>
-                            <input type="text" className={inputClass} name="code" {...register("code", { required: 'field is required' })}
-                                aria-describedby="code" placeholder="code" defaultValue={_state?.code || ''} />
+                            <label className="font-bold">
+                                Code <span className="text-red-600">*</span>
+                            </label>
+                            <span className="text-red-600 md:ml-4">
+                                {errors?.code?.message}
+                            </span>
+                            <input
+                                type="text"
+                                className={inputClass}
+                                name="code"
+                                {...register('code', { required: 'field is required' })}
+                                aria-describedby="code"
+                                placeholder="code"
+                                defaultValue={_state?.code || ''}
+                            />
                         </div>
                         <div>
-                            <button type="submit" className="px-4 py-2 rounded shadow hover:bg-gray-200">Submit</button>
+                            <button
+                                type="submit"
+                                className="px-4 py-2 rounded shadow hover:bg-gray-200"
+                            >
+                                Submit
+                            </button>
                         </div>
                     </form>
                 </div>
             </Modal>
         </div>
-    )
+    );
 }

@@ -1,5 +1,4 @@
-import { axios } from "./axios";
-
+import { axios } from './axios';
 
 /**
  * User login function.
@@ -9,6 +8,6 @@ import { axios } from "./axios";
  */
 export const UserLogin = async (data) => {
     return await axios.post('/auth/user-login', {
-        ...data
+        ...data,
     });
-}
+};

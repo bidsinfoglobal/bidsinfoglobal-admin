@@ -1,4 +1,4 @@
-import { axios } from "./axios";
+import { axios } from './axios';
 
 /**
  * fetch all function.
@@ -6,13 +6,19 @@ import { axios } from "./axios";
  * @param {Object} params request body.
  * @return {Promise<import("axios").AxiosResponse>} return axios response.
  */
-export const fetchCustomerReports = async ({ pageNo, limit, sortBy, sortField, type }) => {
+export const fetchCustomerReports = async ({
+    pageNo,
+    limit,
+    sortBy,
+    sortField,
+    type,
+}) => {
     var parmas = `?pageNo=${pageNo}&limit=${limit}&sortBy=${sortBy}&sortField=${sortField}&type=${type}`;
     return await axios.get('/reports/customer-reports' + parmas);
-}
+};
 
 /**
- * 
+ *
  * @param {Object} body
  * @param {string} [body.from_date]
  * @param {string} [body.to_date]
@@ -20,11 +26,11 @@ export const fetchCustomerReports = async ({ pageNo, limit, sortBy, sortField, t
  */
 export const generateReport = async (body) => {
     return await axios.post('/reports/customer-reports', body);
-}
+};
 
 // /**
-//  * 
-//  * @param {Object} body 
+//  *
+//  * @param {Object} body
 //  * @returns {Promise<import("axios").AxiosResponse>} return axios response.
 //  */
 // export const StatusChangeCustomerReports = async (body) => {
@@ -32,8 +38,8 @@ export const generateReport = async (body) => {
 // }
 
 // /**
-//  * 
-//  * @param {Object} body 
+//  *
+//  * @param {Object} body
 //  * @returns {Promise<import("axios").AxiosResponse>} return axios response.
 //  */
 // export const insertCustomerReports = async (body) => {
@@ -41,8 +47,8 @@ export const generateReport = async (body) => {
 // }
 
 // /**
-//  * 
-//  * @param {Object} body 
+//  *
+//  * @param {Object} body
 //  * @returns {Promise<import("axios").AxiosResponse>} return axios response.
 //  */
 // export const updateCustomerReports = async (body) => {

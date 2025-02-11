@@ -1,5 +1,4 @@
-import { axios } from "./axios";
-
+import { axios } from './axios';
 
 /**
  * fetch all function.
@@ -9,36 +8,36 @@ import { axios } from "./axios";
  */
 export const fetchGrants = async (params) => {
     // var parmas = `?pageNo=${pageNo}&limit=${limit}&sortBy=${sortBy}&sortField=${sortField}&keywords=${keywords}`;
-    return await axios.get('/grants/list' , { params: params });
-}
+    return await axios.get('/grants/list', { params: params });
+};
 // export const fetchGrants = async ({ pageNo, limit, sortBy, sortField, keywords }) => {
 //     var parmas = `?pageNo=${pageNo}&limit=${limit}&sortBy=${sortBy}&sortField=${sortField}&keywords=${keywords}`;
 //     return await axios.get('/grants/list' + parmas);
 // }
 
 /**
- * 
- * @param {Object} body 
+ *
+ * @param {Object} body
  * @returns {Promise<import("axios").AxiosResponse>} return axios response.
  */
 export const insertGrant = async (body) => {
     return await axios.post('/grants', body);
-}
+};
 
 /**
- * 
- * @param {Object} body 
+ *
+ * @param {Object} body
  * @returns {Promise<import("axios").AxiosResponse>} return axios response.
  */
 export const updateGrant = async (body) => {
     return await axios.put('/grants', body);
-}
+};
 
 /**
- * 
- * @param {String} id 
+ *
+ * @param {String} id
  * @returns {Promise<import("axios").AxiosResponse>} return axios response.
  */
 export const deleteGrant = async (id) => {
     return await axios.delete('/grants?_id=' + id);
-}
+};

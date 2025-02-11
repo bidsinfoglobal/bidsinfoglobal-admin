@@ -1,11 +1,15 @@
-import { Button, Modal, Table } from 'antd'
-import React, { useEffect, useState } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import { fetchCustomerRecords, changeCustomerParameter, generateCustomerReport } from '../../redux/slice/customer-reports.slice'
-import { useNavigate } from 'react-router-dom'
-import { EditFilled, PlusOutlined } from '@ant-design/icons'
-import { useForm } from 'react-hook-form'
-import moment from 'moment'
+import { Button, Modal, Table } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+    fetchCustomerRecords,
+    changeCustomerParameter,
+    generateCustomerReport,
+} from '../../redux/slice/customer-reports.slice';
+import { useNavigate } from 'react-router-dom';
+import { EditFilled, PlusOutlined } from '@ant-design/icons';
+import { useForm } from 'react-hook-form';
+import moment from 'moment';
 
 const inputClass = `form-control
 block
@@ -24,160 +28,224 @@ m-0
 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none`;
 
 export default function CustomerReports() {
-    const Customer = useSelector((state) => state.customer_report)
+    const Customer = useSelector((state) => state.customer_report);
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const [date, setDate] = useState({
-      from_date: moment().subtract(1, 'day').format('YYYY-MM-DD'),
-      to_date: moment().format('YYYY-MM-DD')
-    })
+        from_date: moment().subtract(1, 'day').format('YYYY-MM-DD'),
+        to_date: moment().format('YYYY-MM-DD'),
+    });
     const [pagination, setPagination] = React.useState({
         current: 1,
         pageSize: 5,
         total: 0,
-        sort: { '_id': -1 }
+        sort: { _id: -1 },
     });
 
     useEffect(() => {
-      setPagination({
-        current: Customer.pageNo+1,
-        pageSize: Customer.limit,
-        total: Customer.count,
-        sort: { [`${Customer.sortField}`]: Customer.sortBy }
-      })
-        fetchRecord({ pageNo: Customer.pageNo, limit: Customer.limit, sortBy: Customer.sortBy, sortField: Customer.sortField, keywords: Customer.keywords, from_date: Customer.from_date, to_date: Customer.to_date })
-    }, [])
+        setPagination({
+            current: Customer.pageNo + 1,
+            pageSize: Customer.limit,
+            total: Customer.count,
+            sort: { [`${Customer.sortField}`]: Customer.sortBy },
+        });
+        fetchRecord({
+            pageNo: Customer.pageNo,
+            limit: Customer.limit,
+            sortBy: Customer.sortBy,
+            sortField: Customer.sortField,
+            keywords: Customer.keywords,
+            from_date: Customer.from_date,
+            to_date: Customer.to_date,
+        });
+    }, []);
 
     useEffect(() => {
-      setPagination({
-        ...pagination,
-        total: Customer.count
-      })
-    }, [Customer.count])
+        setPagination({
+            ...pagination,
+            total: Customer.count,
+        });
+    }, [Customer.count]);
 
-    function fetchRecord({ pageNo, limit, sortBy, sortField, keywords, from_date, to_date }) {
-      dispatch(fetchCustomerRecords({ pageNo, limit, sortBy, sortField, keywords, type: "Customer" }));
+    function fetchRecord({
+        pageNo,
+        limit,
+        sortBy,
+        sortField,
+        keywords,
+        from_date,
+        to_date,
+    }) {
+        dispatch(
+            fetchCustomerRecords({
+                pageNo,
+                limit,
+                sortBy,
+                sortField,
+                keywords,
+                type: 'Customer',
+            }),
+        );
     }
 
     const handleGenerateReport = async () => {
-      console.log(date);
+        console.log(date);
 
-      var from = moment(date.from_date);
-      var to = moment(date.to_date);
+        var from = moment(date.from_date);
+        var to = moment(date.to_date);
 
-      if(to.diff(from, 'days') < 0) {
-        return alert('Invalid date range');
-      }
-      
-      await dispatch(generateCustomerReport(date));
-      setTimeout(() => {
-        fetchRecord({ pageNo: Customer.pageNo, limit: Customer.limit, sortBy: Customer.sortBy, sortField: Customer.sortField, keywords: Customer.keywords, from_date: Customer.from_date, to_date: Customer.to_date })
-      }, 400)
-    }
+        if (to.diff(from, 'days') < 0) {
+            return alert('Invalid date range');
+        }
+
+        await dispatch(generateCustomerReport(date));
+        setTimeout(() => {
+            fetchRecord({
+                pageNo: Customer.pageNo,
+                limit: Customer.limit,
+                sortBy: Customer.sortBy,
+                sortField: Customer.sortField,
+                keywords: Customer.keywords,
+                from_date: Customer.from_date,
+                to_date: Customer.to_date,
+            });
+        }, 400);
+    };
 
     const onChange_table = (paginate, filter, sorter, extra) => {
         // console.log({paginate, filter, sorter, extra})
         paginate.total = Customer.count;
         paginate.sort = {};
-  
-        if(extra.action == "sort") {
-          paginate.sort[`${sorter.field}`] = sorter.order == 'ascent' ? 1 : -1;
-        }
-        else {
-          paginate.sort = pagination.sort;
+
+        if (extra.action == 'sort') {
+            paginate.sort[`${sorter.field}`] = sorter.order == 'ascent' ? 1 : -1;
+        } else {
+            paginate.sort = pagination.sort;
         }
         setPagination(paginate);
         console.log('paginate', paginate);
         // dispatch(changeCustomerParameter({ pageNo: paginate.current-1, limit: paginate.pageSize, sortBy: paginate.sort[Object.keys(paginate.sort)[0]], sortField: Object.keys(paginate.sort)[0] }))
-        dispatch(fetchCustomerRecords({ pageNo: paginate.current-1, limit: paginate.pageSize, sortBy: paginate.sort[Object.keys(paginate.sort)[0]], sortField: Object.keys(paginate.sort)[0], keywords: Customer.keywords }));
-    }
-
+        dispatch(
+            fetchCustomerRecords({
+                pageNo: paginate.current - 1,
+                limit: paginate.pageSize,
+                sortBy: paginate.sort[Object.keys(paginate.sort)[0]],
+                sortField: Object.keys(paginate.sort)[0],
+                keywords: Customer.keywords,
+            }),
+        );
+    };
 
     const columns = [
         {
-          title: 'Type',
-          dataIndex: 'type',
-          key: 'type',
-          fixed: 'left',
-          width: 200,
-          sorter: (a, b) => a.type - b.type
+            title: 'Type',
+            dataIndex: 'type',
+            key: 'type',
+            fixed: 'left',
+            width: 200,
+            sorter: (a, b) => a.type - b.type,
         },
         {
-          title: 'Status',
-          dataIndex: 'status',
-          key: 'status',
-          width: 200,
-          sorter: (a, b) => a.status - b.status
+            title: 'Status',
+            dataIndex: 'status',
+            key: 'status',
+            width: 200,
+            sorter: (a, b) => a.status - b.status,
         },
         {
-          title: 'From Date',
-          dataIndex: 'from_date',
-          key: 'from_date',
-          width: 150,
-          sorter: (a, b) => a.from_date - b.from_date
+            title: 'From Date',
+            dataIndex: 'from_date',
+            key: 'from_date',
+            width: 150,
+            sorter: (a, b) => a.from_date - b.from_date,
         },
         {
-          title: 'To Date',
-          dataIndex: 'to_date',
-          key: 'to_date',
-          width: 150,
-          sorter: (a, b) => a.to_date - b.to_date
+            title: 'To Date',
+            dataIndex: 'to_date',
+            key: 'to_date',
+            width: 150,
+            sorter: (a, b) => a.to_date - b.to_date,
         },
         {
-          title: 'Generated At',
-          dataIndex: 'createdAt',
-          key: 'createdAt',
-          width: 150,
-          sorter: (a, b) => a.createdAt - b.createdAt
+            title: 'Generated At',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+            width: 150,
+            sorter: (a, b) => a.createdAt - b.createdAt,
         },
         {
-          title: 'Download',
-          dataIndex: 'download_url',
-          key: 'download_url',
-          width: 150,
-          sorter: (a, b) => a.download_url - b.download_url,
-          render: (e, _) => <a href={e} target='_blank'>Download</a>
+            title: 'Download',
+            dataIndex: 'download_url',
+            key: 'download_url',
+            width: 150,
+            sorter: (a, b) => a.download_url - b.download_url,
+            render: (e, _) => (
+                <a href={e} target="_blank">
+                    Download
+                </a>
+            ),
         },
     ];
 
-
-  return (
-    <div>
-        <div className='flex items-center justify-between mb-4'>
-            <h1 className='text-xl'>Customer Reports</h1>
-            {/* <ManagerModel submitHandler={handleCustomerSubmit} /> */}
-            <div className='flex items-end justify-between gap-3'>
-              <div>
-                <p className='text-xs font-semibold mb-1'>from date</p>
-                <input type="date" className='ring-1 rounded p-1' defaultValue={date.from_date} onChange={e => setDate({
-                  to_date: date.to_date,
-                  from_date: moment(e.target.valueAsDate).format('YYYY-MM-DD')
-                })} />
-              </div>
-              <div>
-                <p className='text-xs font-semibold mb-1'>to date</p>
-                <input type="date" className='ring-1 rounded p-1' defaultValue={date.to_date} onChange={e => setDate({
-                  from_date: date.from_date,
-                  to_date: moment(e.target.valueAsDate).format('YYYY-MM-DD')
-                })} />
-              </div>
-              <Button type='primary' className='text-blue-500 ring-1' onClick={handleGenerateReport}>Generate</Button>
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-4">
+                <h1 className="text-xl">Customer Reports</h1>
+                {/* <ManagerModel submitHandler={handleCustomerSubmit} /> */}
+                <div className="flex items-end justify-between gap-3">
+                    <div>
+                        <p className="text-xs font-semibold mb-1">from date</p>
+                        <input
+                            type="date"
+                            className="ring-1 rounded p-1"
+                            defaultValue={date.from_date}
+                            onChange={(e) =>
+                                setDate({
+                                    to_date: date.to_date,
+                                    from_date: moment(e.target.valueAsDate).format(
+                                        'YYYY-MM-DD',
+                                    ),
+                                })
+                            }
+                        />
+                    </div>
+                    <div>
+                        <p className="text-xs font-semibold mb-1">to date</p>
+                        <input
+                            type="date"
+                            className="ring-1 rounded p-1"
+                            defaultValue={date.to_date}
+                            onChange={(e) =>
+                                setDate({
+                                    from_date: date.from_date,
+                                    to_date: moment(e.target.valueAsDate).format(
+                                        'YYYY-MM-DD',
+                                    ),
+                                })
+                            }
+                        />
+                    </div>
+                    <Button
+                        type="primary"
+                        className="text-blue-500 ring-1"
+                        onClick={handleGenerateReport}
+                    >
+                        Generate
+                    </Button>
+                </div>
             </div>
+            <Table
+                loading={Customer.loading}
+                // pagination={{ ...pagination, pageSizeOptions: ['5', '10', '30', '50', '100'], defaultPageSize: 5, showSizeChanger: true }}
+                dataSource={Customer.records}
+                columns={columns}
+                // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
+                scroll={{ y: 430 }}
+                onChange={onChange_table}
+            />
         </div>
-        <Table
-        loading={Customer.loading}
-        // pagination={{ ...pagination, pageSizeOptions: ['5', '10', '30', '50', '100'], defaultPageSize: 5, showSizeChanger: true }}
-        dataSource={Customer.records}
-        columns={columns}
-        // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
-        scroll={{ y: 430 }}
-        onChange={onChange_table}
-        />
-    </div>
-  )
+    );
 }
-
-
 
 // function ManagerModel({ id, _customer, submitHandler }) {
 //   const [open, setOpen] = useState(false);

@@ -1,4 +1,4 @@
-import { axios } from "./axios";
+import { axios } from './axios';
 
 /**
  * fetch all function.
@@ -8,7 +8,7 @@ import { axios } from "./axios";
  */
 export const fetchSubscriptions = async () => {
     return await axios.get('/plan/request');
-}
+};
 
 /**
  * fetch all function.
@@ -18,14 +18,14 @@ export const fetchSubscriptions = async () => {
  */
 export const fetchPlans = async () => {
     return await axios.get('/plan/list');
-}
+};
 
 /**
- * 
- * @param {Object} body 
- * @param {string} [body.plan_request_id] 
+ *
+ * @param {Object} body
+ * @param {string} [body.plan_request_id]
  * @returns {Promise<import("axios").AxiosResponse>} return axios response.
  */
 export const StatusChangeSubscription = async (body) => {
     return await axios.post('/plan/activate-request', body);
-}
+};

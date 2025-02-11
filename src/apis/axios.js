@@ -1,12 +1,12 @@
-import coreAxios from "axios";
-import { BaseUrl } from "../helper/baseurl";
-import { getCookie } from "../utils/fetch-cookies";
+import coreAxios from 'axios';
+import { BaseUrl } from '../helper/baseurl';
+import { getCookie } from '../utils/fetch-cookies';
 // import { setSnackBar } from "../store/common/commonSlice";
 
 export const axios = coreAxios.create({
     baseURL: BaseUrl,
     headers: {
-        Authorization: `${getCookie("token")}`,
+        Authorization: `${getCookie('token')}`,
     },
 });
 
@@ -19,7 +19,7 @@ const axiosInterceptor = (dispatch) => {
         function (error) {
             // Do something with request error
             return Promise.reject(error);
-        }
+        },
     );
 
     axios.interceptors.response.use(
@@ -53,7 +53,7 @@ const axiosInterceptor = (dispatch) => {
 
             return Promise.reject(error);
             // return false;
-        }
+        },
     );
 };
 export default axiosInterceptor;
