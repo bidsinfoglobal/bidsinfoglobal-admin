@@ -5,7 +5,6 @@ import routes from './routes';
 export default function Auth() {
     return (
         <div>
-            {/* <p>Auth</p> */}
             <Routes>
                 {routes.map(
                     ({ layout, pages }) =>
