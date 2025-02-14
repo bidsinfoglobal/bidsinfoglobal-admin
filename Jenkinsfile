@@ -1,7 +1,10 @@
 pipeline {
     agent any
+    parameters {
+        booleanParam(name: 'MANUAL_TRIGGER', defaultValue: false, description: 'Check to trigger manually')
+    }
     triggers {
-        githubPush()
+        githubPush()  // Auto-trigger on GitHub push
     }
     environment {
         NODE_VERSION = "v22.5.1"
@@ -13,7 +16,7 @@ pipeline {
             steps {
                 script {
                     def branch = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
-                    if (branch != 'master') {
+                    if (branch != 'master' && !params.MANUAL_TRIGGER) {
                         error("Build stopped: Not on master branch")
                     }
                 }
