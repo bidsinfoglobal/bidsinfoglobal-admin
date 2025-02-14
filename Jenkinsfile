@@ -3,6 +3,11 @@ pipeline {
     triggers {
         githubPush()
     }
+    environment {
+        NODE_VERSION = "v22.5.1"
+        NVM_DIR = "/root/.nvm"
+        PATH = "${NVM_DIR}/versions/node/${NODE_VERSION}/bin:${env.PATH}"
+    }
     stages {
         stage('Check Branch') {
             steps {
@@ -19,14 +24,32 @@ pipeline {
                 checkout scm
             }
         }
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                    export NVM_DIR="/root/.nvm"
+                    source $NVM_DIR/nvm.sh
+                    nvm use v22.5.1
+                    npm install
+                '''
+            }
+        }
         stage('Build') {
             steps {
-                echo 'Building project...'
+                sh '''
+                    export NVM_DIR="/root/.nvm"
+                    source $NVM_DIR/nvm.sh
+                    nvm use v22.5.1
+                    npm run build
+                '''
             }
         }
         stage('Deploy') {
             steps {
-                echo 'Deploying project...'
+                sh '''
+                    rm -R /var/www/admin/*
+                    cp -r build/* /var/www/admin
+                '''
             }
         }
     }
