@@ -10,12 +10,14 @@ import {
 const initialState = {
     records: [],
     loading: false,
-    pageNo: 0,
-    count: 0,
-    keywords: '',
-    limit: 5,
-    sortBy: -1,
-    sortField: '_id',
+    pagination: {
+        pageNo: 0,
+        limit: 15,
+        sortBy: -1,
+        sortField: '_id',
+        keywords: '',
+        count: 0,
+    },
 };
 
 const changeCustomerParameter = createAsyncThunk(
@@ -29,9 +31,8 @@ const fetchCustomerRecords = createAsyncThunk(
     'customer/fetchCustomerRecords',
     async (state, action) => {
         try {
-            // { pageNo, limit, sortBy, sortField, keywords }
-            var response = await fetchCustomers(state);
-            var result = response.data;
+            const response = await fetchCustomers(state);
+            const result = response.data;
 
             if (!result.success) {
                 throw new Error(result.message || 'Something went wrong!');
@@ -47,8 +48,8 @@ const StatusChangeCustomerRecord = createAsyncThunk(
     'customer/statusChangeCustomerRecord',
     async (state, action) => {
         try {
-            var response = await StatusChangeCustomer(state);
-            var result = response.data;
+            const response = await StatusChangeCustomer(state);
+            const result = response.data;
 
             if (!result.success) {
                 throw new Error(result.message || 'Something went wrong!');
@@ -64,8 +65,8 @@ const insertCustomerRecord = createAsyncThunk(
     'customer/insertCustomerRecord',
     async (state, action) => {
         try {
-            var response = await insertCustomer(state);
-            var result = response.data;
+            const response = await insertCustomer(state);
+            const result = response.data;
 
             if (!result.success) {
                 throw new Error(result.message || 'Something went wrong!');
@@ -81,8 +82,8 @@ const updateCustomerRecord = createAsyncThunk(
     'customer/updateCustomerRecord',
     async (state, action) => {
         try {
-            var response = await updateCustomer(state);
-            var result = response.data;
+            const response = await updateCustomer(state);
+            const result = response.data;
 
             if (!result.success) {
                 throw new Error(result.message || 'Something went wrong!');
@@ -94,49 +95,13 @@ const updateCustomerRecord = createAsyncThunk(
     },
 );
 
-// const deleteGrantRecord = createAsyncThunk(
-//   'customer/deleteGrantRecord',
-//   async (state, action) => {
-//     try {
-//       var response = await deleteGrant(state.id);
-//       var result = response.data;
-
-//       if(!result.success) {
-//         throw new Error(result.message || 'Something went wrong!');
-//       }
-//       return result.result;
-//     }
-//     catch(err) {
-//       throw new Error(err?.response?.data?.message || err.message)
-//     }
-//   }
-// )
-
 export const customerSlice = createSlice({
     name: 'customer',
     initialState,
     reducers: {},
     extraReducers: {
-        [changeCustomerParameter.pending]: (state, action) => {
-            // state.loading = true;
-        },
         [changeCustomerParameter.fulfilled]: (state, action) => {
-            const { pageNo, limit, sortBy, sortField, keywords, count } = action.payload;
-            if (pageNo || pageNo === 0) state.pageNo = pageNo;
-
-            if (limit || limit === 0) state.limit = limit;
-
-            if (sortBy) state.sortBy = sortBy;
-
-            if (sortField) state.sortField = sortField;
-
-            if (keywords) state.keywords = keywords;
-
-            if (count || count === 0) state.count = count;
-        },
-        [changeCustomerParameter.rejected]: (state, action) => {
-            toast_popup(action.error.message, 'error');
-            state.loading = false;
+            state.pagination = { ...state.pagination, ...action.payload };
         },
         [fetchCustomerRecords.pending]: (state, action) => {
             state.loading = true;
@@ -144,17 +109,18 @@ export const customerSlice = createSlice({
         [fetchCustomerRecords.fulfilled]: (state, action) => {
             state.records = action.payload.result.map((p) => ({
                 ...p,
-                _id: p._id,
                 key: p._id,
             }));
             state.loading = false;
-
-            state.pageNo = Number(action.payload.pageNo);
-            state.limit = Number(action.payload.limit);
-            state.sortBy = Number(action.payload.sortBy);
-            state.sortField = action.payload.sortField;
-            state.keywords = action.payload.keywords || '';
-            state.count = Number(action.payload.count);
+            state.pagination = {
+                ...state.pagination,
+                pageNo: Number(action.payload.pageNo),
+                limit: Number(action.payload.limit),
+                sortBy: Number(action.payload.sortBy),
+                sortField: action.payload.sortField,
+                keywords: action.payload.keywords || '',
+                count: Number(action.payload.count),
+            };
         },
         [fetchCustomerRecords.rejected]: (state, action) => {
             toast_popup(action.error.message, 'error');
@@ -165,7 +131,7 @@ export const customerSlice = createSlice({
         },
         [StatusChangeCustomerRecord.fulfilled]: (state, action) => {
             state.loading = false;
-            toast_popup('customer status changed successfully', 'success');
+            toast_popup('Customer status changed successfully', 'success');
         },
         [StatusChangeCustomerRecord.rejected]: (state, action) => {
             toast_popup(action.error.message, 'error');
@@ -176,7 +142,7 @@ export const customerSlice = createSlice({
         },
         [insertCustomerRecord.fulfilled]: (state, action) => {
             state.loading = false;
-            toast_popup('customer created successfully', 'success');
+            toast_popup('Customer created successfully', 'success');
         },
         [insertCustomerRecord.rejected]: (state, action) => {
             toast_popup(action.error.message, 'error');
@@ -187,27 +153,16 @@ export const customerSlice = createSlice({
         },
         [updateCustomerRecord.fulfilled]: (state, action) => {
             state.loading = false;
-            toast_popup('customer updated successfully', 'success');
+            toast_popup('Customer updated successfully', 'success');
         },
         [updateCustomerRecord.rejected]: (state, action) => {
             toast_popup(action.error.message, 'error');
             state.loading = false;
         },
-        // [deleteGrantRecord.pending]: (state, action) => {
-        //   state.loading = true;
-        // },
-        // [deleteGrantRecord.fulfilled]: (state, action) => {
-        //   state.loading = false;
-        //   toast_popup('grant deleted successfully', 'success');
-        // },
-        // [deleteGrantRecord.rejected]: (state, action) => {
-        //   toast_popup(action.error.message, 'error')
-        //   state.loading = false;
-        // },
     },
 });
 
-// Action creators are generated for each case reducer function
+// Export Thunks
 export {
     fetchCustomerRecords,
     changeCustomerParameter,
@@ -216,4 +171,5 @@ export {
     updateCustomerRecord,
 };
 
+// Export Reducer
 export default customerSlice.reducer;

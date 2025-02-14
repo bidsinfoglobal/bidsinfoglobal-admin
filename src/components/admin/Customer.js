@@ -9,12 +9,13 @@ import {
     updateCustomerRecord,
 } from '../../redux/slice/customer.slice';
 import { useNavigate } from 'react-router-dom';
-import { EditFilled, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditFilled, PlusOutlined } from '@ant-design/icons';
 import { useForm } from 'react-hook-form';
 import { userRoles } from '../../utils/roles';
 import { useCookies } from 'react-cookie';
 import { fetchPlanRecords } from '../../redux/slice/subscription.slice';
 import moment from 'moment';
+import DebouncedSearch from '../Common/DebouncedSearch';
 
 const inputClass = `form-control
 block
@@ -33,59 +34,22 @@ m-0
 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none`;
 
 export default function Customer() {
-    const Customer = useSelector((state) => state.customer);
-    const Plans = useSelector((state) => state.subscription);
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const [cookies] = useCookies(['role']);
 
-    const [pagination, setPagination] = React.useState({
-        current: 1,
-        pageSize: 5,
-        total: 0,
-        sort: { _id: -1 },
-    });
+    const { records, loading, pagination } = useSelector((state) => state.customer);
+    const Plans = useSelector((state) => state.subscription);
 
     useEffect(() => {
-        setPagination({
-            current: Customer.pageNo + 1,
-            pageSize: Customer.limit,
-            total: Customer.count,
-            sort: { [`${Customer.sortField || '_id'}`]: Customer.sortBy },
-        });
-        fetchRecord({
-            pageNo: Customer.pageNo,
-            limit: Customer.limit,
-            sortBy: Customer.sortBy,
-            sortField: Customer.sortField || '_id',
-            keywords: Customer.keywords,
-        });
+        dispatch(fetchPlanRecords());
+        dispatch(fetchCustomerRecords(pagination));
     }, []);
 
-    useEffect(() => {
-        setPagination({
-            ...pagination,
-            total: Customer.count,
-        });
-    }, [Customer.count]);
-
-    function fetchRecord({ pageNo, limit, sortBy, sortField, keywords }) {
-        dispatch(fetchCustomerRecords({ pageNo, limit, sortBy, sortField, keywords }));
-    }
-
-    const handleStatusChange = async (checked, id) => {
+    const handleStatusChange = async (status, id) => {
         try {
-            dispatch(StatusChangeCustomerRecord({ status: checked, customer_id: id }));
-
-            setTimeout(() => {
-                fetchRecord({
-                    pageNo: Customer.pageNo,
-                    limit: Customer.limit,
-                    sortBy: Customer.sortBy,
-                    sortField: Customer.sortField || '_id',
-                    keywords: Customer.keywords,
-                });
-            }, 400);
+            await dispatch(StatusChangeCustomerRecord({ status, customer_id: id }));
+            dispatch(fetchCustomerRecords(pagination));
         } catch (err) {
             alert(err.message);
         }
@@ -93,71 +57,46 @@ export default function Customer() {
 
     const handleCustomerSubmit = async (data, id, setOpen) => {
         try {
-            if (id) {
-                data.customer_id = id;
-                await dispatch(updateCustomerRecord(data));
-            } else {
-                await dispatch(insertCustomerRecord(data));
-            }
-
-            setTimeout(() => {
-                fetchRecord({
-                    pageNo: Customer.pageNo,
-                    limit: Customer.limit,
-                    sortBy: Customer.sortBy,
-                    sortField: Customer.sortField || '_id',
-                    keywords: Customer.keywords,
-                });
-            }, 100);
-            setOpen(() => false);
+            id
+                ? await dispatch(updateCustomerRecord({ ...data, customer_id: id }))
+                : await dispatch(insertCustomerRecord(data));
+            dispatch(fetchCustomerRecords(pagination));
+            setOpen(false);
         } catch (err) {
             alert(err.message);
         }
     };
 
-    const onChange_table = (paginate, filter, sorter, extra) => {
-        // console.log({paginate, filter, sorter, extra})
-        paginate.total = Customer.count;
-        paginate.sort = {};
+    const onChangeTable = (paginate, filters, sorter, extra) => {
+        const updatedSortField = sorter.field || '_id';
+        const updatedSortBy = sorter.order === 'ascend' ? 1 : -1;
 
-        if (extra.action == 'sort') {
-            paginate.sort[`${sorter.field || '_id'}`] = sorter.order == 'ascent' ? 1 : -1;
-        } else {
-            paginate.sort = pagination.sort;
-        }
-        setPagination(paginate);
-        console.log('paginate', paginate);
-        dispatch(
-            changeCustomerParameter({
-                pageNo: paginate.current - 1,
-                limit: paginate.pageSize,
-                sortBy: paginate.sort[Object.keys(paginate.sort)[0]],
-                sortField: Object.keys(paginate.sort)[0] || '_id',
-            }),
-        );
-        dispatch(
-            fetchCustomerRecords({
-                pageNo: paginate.current - 1,
-                limit: paginate.pageSize,
-                sortBy: paginate.sort[Object.keys(paginate.sort)[0]],
-                sortField: Object.keys(paginate.sort)[0] || '_id',
-                keywords: Customer.keywords,
-            }),
-        );
+        const updatedPagination = {
+            pageNo: paginate.current - 1,
+            limit: paginate.pageSize,
+            sortBy: updatedSortBy,
+            sortField: updatedSortField,
+            keywords: pagination.keywords,
+        };
+
+        dispatch(changeCustomerParameter(updatedPagination));
+        dispatch(fetchCustomerRecords(updatedPagination));
     };
 
-    useEffect(() => {
-        dispatch(fetchPlanRecords());
-    }, []);
+    const handleSearch = (keywords) => {
+        const updatedPagination = { ...pagination, pageNo: 0, keywords };
+        dispatch(changeCustomerParameter(updatedPagination));
+        dispatch(fetchCustomerRecords(updatedPagination));
+    };
 
     const columns = [
         {
             title: 'Name',
             dataIndex: 'full_name',
             key: 'full_name',
-            fixed: 'left',
             width: 200,
-            sorter: (a, b) => a.full_name - b.full_name,
+            fixed: 'left',
+            sorter: true,
         },
         {
             title: 'Plan',
@@ -176,13 +115,13 @@ export default function Customer() {
                         )}
                     </p>
                     <p>
-                        {moment(record?.plans?.plan_expire_date).diff(
-                            moment(new Date()),
-                            'days',
-                            false,
-                        ) <= 0
+                        {moment(record?.plans?.plan_expire_date).diff(moment(), 'days') <=
+                        0
                             ? 'Plan Expired'
-                            : `Expire in ${moment(record?.plans?.plan_expire_date).diff(moment(new Date()), 'days', false)}`}
+                            : `Expires in ${moment(record?.plans?.plan_expire_date).diff(
+                                  moment(),
+                                  'days',
+                              )} days`}
                     </p>
                 </div>
             ),
@@ -191,44 +130,43 @@ export default function Customer() {
             title: 'Email',
             dataIndex: 'email',
             key: 'email',
-            // fixed: 'left',
             width: 200,
-            sorter: (a, b) => a.email - b.email,
+            sorter: true,
         },
         {
             title: 'Username',
             dataIndex: 'username',
             key: 'username',
             width: 150,
-            sorter: (a, b) => a.username - b.username,
+            sorter: true,
         },
         {
             title: 'Mobile',
             dataIndex: 'phone_no',
             key: 'phone_no',
             width: 150,
-            sorter: (a, b) => a.phone_no - b.phone_no,
+            sorter: true,
         },
         {
-            title: 'Org Name',
+            title: 'Organization',
             dataIndex: 'organization_name',
             key: 'organization_name',
             width: 150,
-            sorter: (a, b) => a.organization_name - b.organization_name,
+            sorter: true,
         },
         {
-            title: 'Url',
+            title: 'Website',
             dataIndex: 'website_url',
             key: 'website_url',
             width: 150,
-            sorter: (a, b) => a.website_url - b.website_url,
+            sorter: true,
         },
         {
             title: 'Country',
             dataIndex: 'country',
             key: 'country',
             width: 150,
-            sorter: (a, b) => a.country - b.country,
+            sorter: true,
         },
         // {
         //   title: 'Last LoggedIn',
@@ -239,24 +177,18 @@ export default function Customer() {
         // },
         {
             title: 'Activate',
-            dataIndex: 'activate',
             key: 'activate',
             fixed: 'right',
             width: 150,
-            render: (e, record) => {
-                var params = '';
-                if (record.tenders_filter) {
-                    params = new URLSearchParams({ ...record.tenders_filter }).toString();
-                    console.log({ params });
-                }
+            render: (_, record) => {
+                const params = record.tenders_filter
+                    ? new URLSearchParams(record.tenders_filter).toString()
+                    : '';
                 return (
                     <Button
                         onClick={() =>
                             navigate(
-                                '/customers/activation-panel?id=' +
-                                    record._id +
-                                    '&' +
-                                    params,
+                                `/customers/activation-panel?id=${record._id}&${params}`,
                             )
                         }
                     >
@@ -265,8 +197,7 @@ export default function Customer() {
                 );
             },
         },
-    ].concat(
-        [userRoles.SUPER_ADMIN].includes(cookies.role)
+        ...([userRoles.SUPER_ADMIN].includes(cookies.role)
             ? [
                   {
                       title: 'Status',
@@ -274,7 +205,7 @@ export default function Customer() {
                       key: 'status',
                       fixed: 'right',
                       width: 150,
-                      sorter: (a, b) => a.status - b.status,
+                      sorter: true,
                       render: (e, record) => (
                           <select
                               className={inputClass}
@@ -285,7 +216,6 @@ export default function Customer() {
                           >
                               <option value={'inactive'}>Inactive</option>
                               <option value={'active'}>Active</option>
-                              {/* <option value={'blocked'}>Blocked</option> */}
                           </select>
                       ),
                   },
@@ -304,60 +234,98 @@ export default function Customer() {
                                   _customer={record}
                                   _plans={Plans.plan_records}
                               />
-                              {/* <Button title="Delete" icon={<DeleteOutlined />} onClick={() => handleDeleteSlide(record._id)}></Button> */}
+                              {/* <Button
+                                  title="Delete"
+                                  icon={<DeleteOutlined />}
+                                  onClick={() => handleDeleteSlide(record._id)}
+                              ></Button> */}
                           </div>
                       ),
                   },
               ]
-            : [],
-    );
+            : []),
+    ];
 
     return (
         <div>
             <div className="flex items-center justify-between mb-4">
                 <h1 className="text-xl">Customer</h1>
-                <ManagerModel
-                    submitHandler={handleCustomerSubmit}
-                    _plans={Plans.plan_records}
-                />
+                <div className="flex gap-2 ml-auto ">
+                    <DebouncedSearch
+                        onSearch={handleSearch}
+                        placeholder="Search Customers..."
+                    />
+                    <ManagerModel
+                        submitHandler={handleCustomerSubmit}
+                        _plans={Plans.plan_records}
+                    />
+                </div>
             </div>
             <Table
-                loading={Customer.loading}
+                loading={loading}
                 pagination={{
-                    ...pagination,
-                    pageSizeOptions: ['5', '10', '30', '50', '100'],
-                    defaultPageSize: 5,
+                    current: pagination.pageNo + 1,
+                    pageSize: pagination.limit,
+                    total: pagination.count,
+                    pageSizeOptions: ['15', '30', '50', '100', '200'],
                     showSizeChanger: true,
                 }}
-                dataSource={Customer.records}
+                dataSource={records}
                 columns={columns}
-                // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
-                scroll={{ y: 430 }}
-                onChange={onChange_table}
+                scroll={{ y: '65vh' }}
+                onChange={onChangeTable}
+                rowKey="_id"
             />
         </div>
     );
 }
 
-function ManagerModel({ id, _customer, submitHandler, _plans }) {
+function ManagerModel({ id, _customer = {}, submitHandler, _plans = [] }) {
     const [open, setOpen] = useState(false);
     const {
         register,
         handleSubmit,
         formState: { errors },
-        setValue,
     } = useForm();
 
-    const onSubmit = (body) => {
-        submitHandler(body, id, setOpen);
-    };
+    const onSubmit = (data) => submitHandler(data, id, setOpen);
 
-    useEffect(() => {}, []);
+    const formFields = [
+        { name: 'full_name', label: 'Full Name', required: true },
+        { name: 'phone_no', label: 'Mobile', required: true },
+        { name: 'email', label: 'Email', required: true },
+        { name: 'organization_name', label: 'Organization Name', required: true },
+        { name: 'website_url', label: 'Website Url' },
+        { name: 'country', label: 'Country' },
+    ];
+
+    const additionalFields = id
+        ? [
+              { name: 'address', label: 'Address', required: true },
+              { name: 'city', label: 'City' },
+              { name: 'location', label: 'Location' },
+              { name: 'pincode', label: 'Pincode' },
+              { name: 'telephone_no', label: 'Telephone' },
+              { name: 'products_services', label: 'Products Services' },
+              { name: 'operation', label: 'Operation' },
+              {
+                  name: 'customer_type',
+                  label: 'Customer Type',
+                  type: 'select',
+                  options: [
+                      { value: 'FG', label: 'Free Global' },
+                      { value: 'FD', label: 'Free Domestic' },
+                      { value: 'SG', label: 'Subscribed Global' },
+                      { value: 'SD', label: 'Subscribed Domestic' },
+                  ],
+              },
+          ]
+        : [];
 
     return (
-        <div className="">
+        <div>
             <Button
-                className={!id ? 'float-right mb-2' : ''}
+                className={!id ? 'float-right' : ''}
                 title={id ? 'Edit' : 'Add'}
                 icon={id ? <EditFilled /> : <PlusOutlined />}
                 onClick={() => setOpen(true)}
@@ -367,331 +335,117 @@ function ManagerModel({ id, _customer, submitHandler, _plans }) {
 
             <Modal
                 centered
-                title={(id ? 'Edit' : 'Add') + ' Customer'}
+                title={`${id ? 'Edit' : 'Add'} Customer`}
                 open={open}
-                onOk={() => setOpen(false)}
-                footer={false}
                 onCancel={() => setOpen(false)}
+                footer={null}
                 width={1000}
             >
-                <div>
-                    <form onSubmit={handleSubmit(onSubmit)}>
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 md:gap-3">
-                            <div className="form-group mb-6">
-                                <label className="font-bold">
-                                    Full Name <span className="text-red-600">*</span>
-                                </label>
-                                <span className="text-red-600 md:ml-4">
-                                    {errors?.full_name?.message}
-                                </span>
-                                <input
-                                    type="text"
-                                    className={inputClass}
-                                    name="full_name"
-                                    {...register('full_name', {
-                                        required: 'field is required',
-                                    })}
-                                    aria-describedby="full_name"
-                                    placeholder="full name"
-                                    defaultValue={_customer?.full_name || ''}
-                                />
-                            </div>
-                            <div className="form-group mb-6">
-                                <label className="font-bold">
-                                    Mobile <span className="text-red-600">*</span>
-                                </label>
-                                <span className="text-red-600 md:ml-4">
-                                    {errors?.phone_no?.message}
-                                </span>
-                                <input
-                                    type="text"
-                                    className={inputClass}
-                                    name="phone_no"
-                                    {...register('phone_no', {
-                                        required: 'field is required',
-                                    })}
-                                    aria-describedby="phone_no"
-                                    placeholder="mobile"
-                                    defaultValue={_customer?.phone_no || ''}
-                                />
-                            </div>
-                            <div className="form-group mb-6">
-                                <label className="font-bold">
-                                    Email <span className="text-red-600">*</span>
-                                </label>
-                                <span className="text-red-600 md:ml-4">
-                                    {errors?.email?.message}
-                                </span>
-                                <input
-                                    type="text"
-                                    className={inputClass}
-                                    name="email"
-                                    {...register('email', {
-                                        required: 'field is required',
-                                    })}
-                                    aria-describedby="email"
-                                    placeholder="email"
-                                    defaultValue={_customer?.email || ''}
-                                />
-                            </div>
-                            <div className="form-group mb-6">
-                                <label className="font-bold">
-                                    Organization Name{' '}
-                                    <span className="text-red-600">*</span>
-                                </label>
-                                <span className="text-red-600 md:ml-4">
-                                    {errors?.organization_name?.message}
-                                </span>
-                                <input
-                                    type="text"
-                                    className={inputClass}
-                                    name="organization_name"
-                                    {...register('organization_name', {
-                                        required: 'field is required',
-                                    })}
-                                    aria-describedby="organization_name"
-                                    placeholder="organization name"
-                                    defaultValue={_customer?.organization_name || ''}
-                                />
-                            </div>
-                            <div className="form-group mb-6">
-                                <label className="font-bold">Website Url</label>
-                                <span className="text-red-600 md:ml-4">
-                                    {errors?.website_url?.message}
-                                </span>
-                                <input
-                                    type="text"
-                                    className={inputClass}
-                                    name="website_url"
-                                    {...register('website_url')}
-                                    aria-describedby="website_url"
-                                    placeholder="website url"
-                                    defaultValue={_customer?.website_url || ''}
-                                />
-                            </div>
-                            <div className="form-group mb-6">
-                                <label className="font-bold">Country</label>
-                                <span className="text-red-600 md:ml-4">
-                                    {errors?.country?.message}
-                                </span>
-                                <input
-                                    type="text"
-                                    className={inputClass}
-                                    name="country"
-                                    {...register('country')}
-                                    aria-describedby="country"
-                                    placeholder="country"
-                                    defaultValue={_customer?.country || ''}
-                                />
-                            </div>
-                            {id && (
-                                <>
-                                    <div className="form-group mb-6">
-                                        <label className="font-bold">
-                                            Address{' '}
+                <form onSubmit={handleSubmit(onSubmit)}>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 md:gap-3">
+                        {[...formFields, ...additionalFields].map(
+                            ({ name, label, required, type, options }) => (
+                                <div key={name} className="form-group mb-6">
+                                    <label className="font-bold">
+                                        {label}{' '}
+                                        {required && (
                                             <span className="text-red-600">*</span>
-                                        </label>
+                                        )}
+                                    </label>
+                                    {errors[name] && (
                                         <span className="text-red-600 md:ml-4">
-                                            {errors?.address?.message}
+                                            {errors[name].message}
                                         </span>
-                                        <input
-                                            type="text"
-                                            className={inputClass}
-                                            name="address"
-                                            {...register('address', {
-                                                required: 'field is required',
-                                            })}
-                                            aria-describedby="address"
-                                            placeholder="address"
-                                            defaultValue={_customer?.address || ''}
-                                        />
-                                    </div>
-                                    <div className="form-group mb-6">
-                                        <label className="font-bold">City</label>
-                                        <span className="text-red-600 md:ml-4">
-                                            {errors?.city?.message}
-                                        </span>
-                                        <input
-                                            type="text"
-                                            className={inputClass}
-                                            name="city"
-                                            {...register('city')}
-                                            aria-describedby="city"
-                                            placeholder="city"
-                                            defaultValue={_customer?.city || ''}
-                                        />
-                                    </div>
-                                    <div className="form-group mb-6">
-                                        <label className="font-bold">Location</label>
-                                        <span className="text-red-600 md:ml-4">
-                                            {errors?.location?.message}
-                                        </span>
-                                        <input
-                                            type="text"
-                                            className={inputClass}
-                                            name="location"
-                                            {...register('location')}
-                                            aria-describedby="location"
-                                            placeholder="location"
-                                            defaultValue={_customer?.location || ''}
-                                        />
-                                    </div>
-                                    <div className="form-group mb-6">
-                                        <label className="font-bold">Pincode</label>
-                                        <span className="text-red-600 md:ml-4">
-                                            {errors?.pincode?.message}
-                                        </span>
-                                        <input
-                                            type="text"
-                                            className={inputClass}
-                                            name="pincode"
-                                            {...register('pincode')}
-                                            aria-describedby="pincode"
-                                            placeholder="pincode"
-                                            defaultValue={_customer?.pincode || ''}
-                                        />
-                                    </div>
-                                    <div className="form-group mb-6">
-                                        <label className="font-bold">Telephone</label>
-                                        <span className="text-red-600 md:ml-4">
-                                            {errors?.telephone_no?.message}
-                                        </span>
-                                        <input
-                                            type="text"
-                                            className={inputClass}
-                                            name="telephone_no"
-                                            {...register('telephone_no')}
-                                            aria-describedby="telephone_no"
-                                            placeholder="telephone"
-                                            defaultValue={_customer?.telephone_no || ''}
-                                        />
-                                    </div>
-                                    <div className="form-group mb-6">
-                                        <label className="font-bold">
-                                            Products Services
-                                        </label>
-                                        <span className="text-red-600 md:ml-4">
-                                            {errors?.products_services?.message}
-                                        </span>
-                                        <input
-                                            type="text"
-                                            className={inputClass}
-                                            name="products_services"
-                                            {...register('products_services')}
-                                            aria-describedby="products_services"
-                                            placeholder="products services"
-                                            defaultValue={
-                                                _customer?.products_services || ''
-                                            }
-                                        />
-                                    </div>
-                                    <div className="form-group mb-6">
-                                        <label className="font-bold">Operation</label>
-                                        <span className="text-red-600 md:ml-4">
-                                            {errors?.operation?.message}
-                                        </span>
-                                        <input
-                                            type="text"
-                                            className={inputClass}
-                                            name="operation"
-                                            {...register('operation')}
-                                            aria-describedby="operation"
-                                            placeholder="operation"
-                                            defaultValue={_customer?.operation || ''}
-                                        />
-                                    </div>
-                                    <div className="form-group mb-6">
-                                        <label className="font-bold">
-                                            Customer Type{' '}
-                                            <span className="text-red-600">*</span>
-                                        </label>
+                                    )}
+                                    {type === 'select' ? (
                                         <select
-                                            name="customer_type"
-                                            {...register('customer_type')}
+                                            {...register(name, {
+                                                required: required && 'Field is required',
+                                            })}
                                             className={inputClass}
-                                            defaultValue="FG"
                                         >
-                                            <option value="FG">Free Global</option>
-                                            <option value="FD">Free Domestic</option>
-                                            <option value="SG">Subscribed Global</option>
-                                            <option value="sD">
-                                                Subscribed Domestic
-                                            </option>
+                                            {options.map(({ value, label }) => (
+                                                <option key={value} value={value}>
+                                                    {label}
+                                                </option>
+                                            ))}
                                         </select>
-                                    </div>
-                                </>
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            className={inputClass}
+                                            {...register(name, {
+                                                required: required && 'Field is required',
+                                            })}
+                                            defaultValue={_customer[name] || ''}
+                                        />
+                                    )}
+                                </div>
+                            ),
+                        )}
+                    </div>
+
+                    {/* Plan Details Section */}
+                    <h1 className="text-xl">Plan Details</h1>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 md:gap-3">
+                        <div className="form-group mb-6">
+                            <label className="font-bold">
+                                Plan Name <span className="text-red-600">*</span>
+                            </label>
+                            <select
+                                {...register('purchase_plan_id')}
+                                className={inputClass}
+                                defaultValue={
+                                    _customer?.plans?.purchase_plan_id || 'free_plan'
+                                }
+                            >
+                                <option value="free_plan">Free</option>
+                                {_plans.map(({ plan_id, title }) => (
+                                    <option key={plan_id} value={plan_id}>
+                                        {title}
+                                    </option>
+                                ))}
+                            </select>
+                            {_customer?.plans?.categories && (
+                                <p>
+                                    Selected Categories:{' '}
+                                    {_customer.plans.categories.join(', ')}
+                                </p>
                             )}
                         </div>
                         <div className="form-group mb-6">
-                            <h1 className="text-xl">Plan Details</h1>
+                            <label className="font-bold">
+                                Plan Expire Date <span className="text-red-600">*</span>
+                            </label>
+                            <input
+                                type="date"
+                                className={inputClass}
+                                {...register('plan_expire_date')}
+                                defaultValue={
+                                    moment(_customer?.plans?.plan_expire_date).format(
+                                        'YYYY-MM-DD',
+                                    ) || ''
+                                }
+                            />
                         </div>
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 md:gap-3">
-                            <div className="form-group mb-6">
-                                <label className="font-bold">
-                                    Plan name <span className="text-red-600">*</span>
-                                </label>
-                                <select
-                                    name="purchase_plan_id"
-                                    {...register('purchase_plan_id')}
-                                    className={inputClass}
-                                    defaultValue={_customer?.plans?.purchase_plan_id}
-                                >
-                                    <option value={'free_plan'}>Free</option>
-                                    {_plans.map((ob, ke) => {
-                                        return (
-                                            <option value={ob.plan_id}>{ob.title}</option>
-                                        );
-                                    })}
-                                </select>
-                                {_customer?.plans?.categories ? (
-                                    <p>
-                                        Selected Categories:{' '}
-                                        {_customer?.plans?.categories.join(',')}
-                                    </p>
-                                ) : null}
-                            </div>
-                            <div className="form-group mb-6">
-                                <label className="font-bold">
-                                    Plan Expire Date{' '}
-                                    <span className="text-red-600">*</span>
-                                </label>
-                                <input
-                                    type="date"
-                                    className={inputClass}
-                                    name="plan_expire_date"
-                                    {...register('plan_expire_date')}
-                                    aria-describedby="plan_expire_date"
-                                    placeholder="plan_expire_date"
-                                    defaultValue={
-                                        moment(_customer?.plans?.plan_expire_date).format(
-                                            'YYYY-MM-DD',
-                                        ) || ''
-                                    }
-                                />
-                            </div>
-                            <div className="form-group mb-6">
-                                <label className="font-bold">Received Amount</label>
-                                <input
-                                    type="text"
-                                    className={inputClass}
-                                    name="received_amount"
-                                    {...register('received_amount')}
-                                    aria-describedby="received_amount"
-                                    placeholder="Received Amount"
-                                    defaultValue={_customer?.plans?.received_amount}
-                                />
-                            </div>
+                        <div className="form-group mb-6">
+                            <label className="font-bold">Received Amount</label>
+                            <input
+                                type="text"
+                                className={inputClass}
+                                {...register('received_amount')}
+                                defaultValue={_customer?.plans?.received_amount || ''}
+                            />
                         </div>
-                        <div>
-                            <button
-                                type="submit"
-                                className="px-4 py-2 rounded shadow hover:bg-gray-200"
-                            >
-                                Submit
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        className="px-4 py-2 rounded shadow hover:bg-gray-200"
+                    >
+                        Submit
+                    </button>
+                </form>
             </Modal>
         </div>
     );

@@ -1,5 +1,5 @@
-import { Button, Modal, Table, Select, DatePicker } from 'antd';
-import React, { useEffect, useState } from 'react';
+import { Button, Modal, Table, Select, DatePicker, Collapse, Typography } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -32,12 +32,13 @@ import {
     fetchContractAwardRecords,
 } from '../../../redux/slice/contractaward.slice';
 import { toast } from 'react-toastify';
+import dayjs from 'dayjs';
 
 const inputClass = `form-control
 block
 w-full
 px-3
-py-1.5
+py-1
 text-base
 font-normal
 text-gray-700
@@ -68,6 +69,7 @@ export default function ActivationPanel({ props }) {
     const [query, setQuery] = useState();
 
     const watchField = watch();
+    console.log(watchField, 'watchField');
 
     const Tender = useSelector((state) => state.tender);
     const Grant = useSelector((state) => state.grant);
@@ -82,6 +84,7 @@ export default function ActivationPanel({ props }) {
     const _from_date = searchParams.get('from_date') || '';
     const _to_date = searchParams.get('to_date') || '';
     const _keyword = searchParams.get('keywords') || '';
+    const _limits = searchParams.get('limits') || '';
     const _sectors = searchParams.get('sectors')
         ? searchParams.get('sectors').split(',')
         : [];
@@ -297,13 +300,14 @@ export default function ActivationPanel({ props }) {
 
     useEffect(() => {
         if (watchField.data_type === 'tender') {
+            console.log(Tender, 'TenderTender');
             setQuery(Tender?.query);
             setPagination({
                 ...pagination,
                 total: Tender.count,
             });
         }
-    }, [Tender.count, watchField?.data_type]);
+    }, [Tender.query, watchField?.data_type]);
 
     useEffect(() => {
         if (watchField.data_type === 'projects') {
@@ -357,7 +361,6 @@ export default function ActivationPanel({ props }) {
         query_type,
         data_type,
     }) {
-        console.log(data_type);
         if (data_type === 'tender') {
             dispatch(
                 fetchTenderRecords({
@@ -447,13 +450,16 @@ export default function ActivationPanel({ props }) {
 
     const getFormValues = () => {
         let values = getValues();
-        values.sectors = values.sectors ? values.sectors.join(',') : '';
-        values.cpv_codes = values.cpv_codes ? values.cpv_codes.join(',') : '';
-        values.regions = values.regions ? values.regions.join(',') : '';
-        values.funding_agency = values.funding_agency
-            ? values.funding_agency.join(',')
-            : '';
-        return values;
+        const body = JSON.parse(JSON.stringify(values));
+        body.sectors = body.sectors ? body.sectors.join(',') : '';
+        body.cpv_codes = body.cpv_codes ? body.cpv_codes.join(',') : '';
+        body.regions = body.regions ? body.regions.join(',') : '';
+        body.country = body.country ? body.country.join(',') : '';
+        body.funding_agency = body.funding_agency ? body.funding_agency.join(',') : '';
+
+        delete body.data_type;
+        delete body.limits;
+        return body;
     };
 
     const handleTenderSearch = async (body) => {
@@ -473,7 +479,9 @@ export default function ActivationPanel({ props }) {
                 sortField: Tender.sortField,
                 ...body,
             });
-        } catch (error) {}
+        } catch (error) {
+            console.log(error, 'error in tender search');
+        }
     };
 
     const handleTenderSubmit = async () => {
@@ -496,7 +504,6 @@ export default function ActivationPanel({ props }) {
     // }
 
     const onChange_table = (paginate, filter, sorter, extra) => {
-        // console.log({paginate, filter, sorter, extra})
         if (watchField.data_type === 'tender') {
             paginate.total = Tender.count;
             paginate.sort = {};
@@ -507,7 +514,6 @@ export default function ActivationPanel({ props }) {
                 paginate.sort = pagination.sort;
             }
             setPagination(paginate);
-            console.log('paginate', paginate);
             dispatch(
                 changeTenderParameter({
                     pageNo: paginate.current - 1,
@@ -538,7 +544,6 @@ export default function ActivationPanel({ props }) {
                 paginate.sort = pagination.sort;
             }
             setPagination(paginate);
-            console.log('paginate', paginate);
             dispatch(
                 changeProjectParameter({
                     pageNo: paginate.current - 1,
@@ -569,7 +574,6 @@ export default function ActivationPanel({ props }) {
                 paginate.sort = pagination.sort;
             }
             setPagination(paginate);
-            console.log('paginate', paginate);
             dispatch(
                 changeGrantParameter({
                     pageNo: paginate.current - 1,
@@ -600,7 +604,6 @@ export default function ActivationPanel({ props }) {
                 paginate.sort = pagination.sort;
             }
             setPagination(paginate);
-            console.log('paginate', paginate);
             dispatch(
                 changeContractAwardParameter({
                     pageNo: paginate.current - 1,
@@ -659,7 +662,6 @@ export default function ActivationPanel({ props }) {
     }
 
     function handleDateRange(range) {
-        console.log(range);
         if (Array.isArray(range) && range[0] && range[1]) {
             const [from, to] = [
                 range[0].format('YYYY-MM-DD'),
@@ -675,162 +677,188 @@ export default function ActivationPanel({ props }) {
 
     const tenderColumns = [
         {
-            title: 'Authority Name',
-            dataIndex: 'authority_name',
-            key: 'authority_name',
+            title: 'Title',
+            dataIndex: 'title',
+            key: 'title',
             fixed: 'left',
             width: 170,
             height: 100,
-            // sorter: (a, b) => a.authority_name - b.authority_name
+            sorter: true,
+        },
+        {
+            title: 'Big Ref No',
+            dataIndex: 'big_ref_no',
+            key: 'big_ref_no',
+            fixed: 'left',
+            width: 150,
+            sorter: true,
+        },
+        {
+            title: 'Authority Name',
+            dataIndex: 'authority_name',
+            key: 'authority_name',
+            width: 170,
+            height: 100,
+            sorter: true,
         },
         {
             title: 'Address',
             dataIndex: 'address',
             key: 'address',
             width: 150,
-            // sorter: (a, b) => a.address - b.address
+            sorter: true,
         },
         {
             title: 'Phone',
             dataIndex: 'telephone',
             key: 'telephone',
             width: 150,
-            // sorter: (a, b) => a.telephone - b.telephone
+            sorter: true,
         },
         {
             title: 'Fax Number',
             dataIndex: 'fax_number',
             key: 'fax_number',
             width: 150,
-            // sorter: (a, b) => a.fax_number - b.fax_number
+            sorter: true,
         },
         {
             title: 'Email',
             dataIndex: 'email',
             key: 'email',
             width: 150,
-            // sorter: (a, b) => a.email - b.email
+            sorter: true,
         },
         {
             title: 'Contact Person',
             dataIndex: 'contact_person',
             key: 'contact_person',
             width: 150,
-            // sorter: (a, b) => a.contact_person - b.contact_person
-        },
-        {
-            title: 'Big Ref No',
-            dataIndex: 'big_ref_no',
-            key: 'big_ref_no',
-            width: 150,
-            // sorter: (a, b) => a.big_ref_no - b.big_ref_no
+
+            sorter: true,
         },
         {
             title: 'Description',
             dataIndex: 'description',
             key: 'description',
-            width: 150,
-            // sorter: (a, b) => a.description - b.description
+            width: 350,
+            render: (text) => {
+                // keep the description limited
+                return (
+                    <Typography.Paragraph
+                        ellipsis={{ rows: 3, expandable: true, symbol: 'read more' }}
+                    >
+                        {text}
+                    </Typography.Paragraph>
+                );
+            },
+
+            sorter: true,
         },
         {
             title: 'Tender Type',
             dataIndex: 'tender_type',
             key: 'tender_type',
             width: 150,
-            // sorter: (a, b) => a.tender_type - b.tender_type
+
+            sorter: true,
         },
         {
             title: 'Tender No',
             dataIndex: 'tender_no',
             key: 'tender_no',
             width: 150,
-            // sorter: (a, b) => a.tender_no - b.tender_no
+
+            sorter: true,
         },
         {
             title: 'Funding Agency',
             dataIndex: 'funding_agency',
             key: 'funding_agency',
             width: 150,
-            // sorter: (a, b) => a.funding_agency - b.funding_agency
+
+            sorter: true,
         },
         {
             title: 'Tender Competition',
             dataIndex: 'tender_competition',
             key: 'tender_competition',
             width: 150,
-            // sorter: (a, b) => a.tender_competition - b.tender_competition
+
+            sorter: true,
         },
         {
             title: 'Publishing Date',
             dataIndex: 'published_date',
             key: 'published_date',
             width: 150,
-            // sorter: (a, b) => a.published_date - b.published_date
+
+            sorter: true,
         },
         {
             title: 'Closing Date',
             dataIndex: 'closing_date',
             key: 'closing_date',
             width: 150,
-            // sorter: (a, b) => a.closing_date - b.closing_date
+
+            sorter: true,
         },
         {
             title: 'Country',
             dataIndex: 'country',
             key: 'country',
             width: 150,
-            // sorter: (a, b) => a.country - b.country
+
+            sorter: true,
         },
         {
             title: 'Emd',
             dataIndex: 'emd',
             key: 'emd',
             width: 150,
-            // sorter: (a, b) => a.emd - b.emd
+
+            sorter: true,
         },
         {
             title: 'Estimated Cost',
             dataIndex: 'estimated_cost',
             key: 'estimated_cost',
             width: 150,
-            // sorter: (a, b) => a.estimated_cost - b.estimated_cost
+
+            sorter: true,
         },
         {
             title: 'Documents',
             dataIndex: 'documents',
             key: 'documents',
             width: 150,
-            // sorter: (a, b) => a.documents - b.documents
+
+            sorter: true,
         },
         {
             title: 'Sectors',
             dataIndex: 'sectors',
             key: 'sectors',
             width: 150,
-            // sorter: (a, b) => a.sectors - b.sectors
+
+            sorter: true,
         },
         {
             title: 'Cpv Code',
             dataIndex: 'cpv_codes',
             key: 'cpv_codes',
             width: 150,
-            // sorter: (a, b) => a.cpv_codes - b.cpv_codes
+
+            sorter: true,
         },
         {
             title: 'Regions',
             dataIndex: 'regions',
             key: 'regions',
             width: 150,
-            // sorter: (a, b) => a.regions - b.regions
+
+            sorter: true,
         },
-        // {
-        //   title: 'Date',
-        //   dataIndex: '_id',
-        //   key: '_id',
-        //   fixed: 'right',
-        //   render: (e, record) => new Date(e).toLocaleString(),
-        // //   sorter: (a, b) => a._id - b._id
-        // },
     ];
     const projectColumns = [
         {
@@ -1260,14 +1288,11 @@ export default function ActivationPanel({ props }) {
     const [filterData, setFilterData] = useState();
 
     useEffect(() => {
-        console.log('Fetching data...');
         const fetchData = async () => {
             try {
                 const re = await getCustomerDetail(customerid);
                 if (re?.status === 200) {
-                    console.log(re.data.result);
                     setFilterData(re.data.result);
-                    // setFilter(re.data.result);
                 }
             } catch (error) {
                 console.error(error);
@@ -1312,409 +1337,506 @@ export default function ActivationPanel({ props }) {
                     setValue(field, selectedFilter[field]);
                 }
             });
+
+            if (filterData.tenders_filter) {
+                handleTenderSearch({
+                    data_type: watchField.data_type,
+                    ...filterData.tenders_filter,
+                });
+                // fetchRecord({
+                //     pageNo: Tender.pageNo,
+                //     limit: Tender.limit,
+                //     sortBy: Tender.sortBy,
+                //     sortField: Tender.sortField,
+                //     data_type: watchField.data_type,
+                //     ...filterData.tenders_filter,
+                // });
+            }
         }
     }, [filterData, watchField.data_type]);
+
+    const rangePickerValue = useMemo(() => {
+        let dateValue = [];
+        if (watchField.from_date && watchField.to_date) {
+            dateValue = [
+                dayjs(watchField.from_date, 'YYYY-MM-DD'),
+                dayjs(watchField.to_date, 'YYYY-MM-DD'),
+            ];
+        }
+        return (
+            <RangePicker
+                value={dateValue.length > 0 ? dateValue : undefined}
+                style={{
+                    width: '100%',
+                    marginBottom: '25px',
+                }}
+                onChange={handleDateRange}
+            />
+        );
+    }, [watchField.from_date, watchField.to_date]);
 
     return (
         <div>
             <div className="flex items-center justify-between mb-4">
                 <h1 className="text-xl">Activation Panel</h1>
-                {/* <input className={`${inputClass} w-1/2`} onChange={(e) => console.log(e.target.value)} placeholder='Search' /> */}
-                {/* <ManagerModel submitHandler={handleTenderSubmit} fetchCustomers={fetchCustomers} tender_ids={Tender.records.map(r => r._id)} /> */}
-                {
-                    //  Tender.records.length > 0 &&
-                    <Button onClick={handleTenderSubmit}>Activate this filter</Button>
-                }
+                <Button onClick={handleTenderSubmit}>Activate this filter</Button>
             </div>
-            <div className="ring-1 rounded my-2 px-4 py-2 ring-gray-100 shadow">
-                <form onSubmit={handleSubmit(handleTenderSearch)}>
-                    <Controller
-                        control={control}
-                        name="data_type"
-                        {...register('data_type')}
-                        // defaultValue={"tender"}
-                        render={({ field }) => (
-                            <Select
-                                title="Data Type"
-                                {...field}
-                                style={{
-                                    width: '100%',
-                                    marginBottom: '25px',
-                                    padding: '5px',
-                                }}
-                                placeholder="Please select Data type"
-                                // onChange={(data)=>{console.log("QWeqw")}}
-                                options={[
-                                    {
-                                        label: 'Tender',
-                                        value: 'tender',
-                                    },
-                                    {
-                                        label: 'Contract Awards',
-                                        value: 'contract_awards',
-                                    },
-                                    {
-                                        label: 'Projects',
-                                        value: 'projects',
-                                    },
-                                    {
-                                        label: 'Grants',
-                                        value: 'grants',
-                                    },
-                                ]}
+            <Collapse
+                defaultActiveKey={['1']}
+                style={{ marginTop: '15px', marginBottom: '15px' }}
+            >
+                <Collapse.Panel header="Filters" key="1">
+                    <div className="ring-1 rounded my-2 px-4 py-2 ring-gray-100 shadow">
+                        <form onSubmit={handleSubmit(handleTenderSearch)}>
+                            <Controller
+                                control={control}
+                                name="data_type"
+                                {...register('data_type')}
+                                // defaultValue={"tender"}
+                                render={({ field }) => (
+                                    <Select
+                                        title="Data Type"
+                                        {...field}
+                                        style={{
+                                            width: '100%',
+                                            marginBottom: '25px',
+                                        }}
+                                        placeholder="Please select Data type"
+                                        // onChange={(data)=>{console.log("QWeqw")}}
+                                        options={[
+                                            {
+                                                label: 'Tender',
+                                                value: 'tender',
+                                            },
+                                            {
+                                                label: 'Contract Awards',
+                                                value: 'contract_awards',
+                                            },
+                                            {
+                                                label: 'Projects',
+                                                value: 'projects',
+                                            },
+                                            {
+                                                label: 'Grants',
+                                                value: 'grants',
+                                            },
+                                        ]}
+                                    />
+                                )}
                             />
-                        )}
-                    />
-                    <Controller
-                        control={control}
-                        name="data_type"
-                        {...register('query_type')}
-                        // defaultValue={"filter_query"}
-                        render={({ field }) => (
-                            <Select
-                                title="Query Type"
-                                {...field}
-                                style={{
-                                    width: '100%',
-                                    marginBottom: '25px',
-                                    padding: '5px',
-                                }}
-                                placeholder="Please select Query type"
-                                // onChange={(data)=>{console.log("QWeqw")}}
-                                options={[
-                                    {
-                                        label: 'Filter Query',
-                                        value: 'filter_query',
-                                    },
-                                    {
-                                        label: 'Raw Query',
-                                        value: 'raw_query',
-                                    },
-                                ]}
+                            <Controller
+                                control={control}
+                                name="data_type"
+                                {...register('query_type')}
+                                // defaultValue={"filter_query"}
+                                render={({ field }) => (
+                                    <Select
+                                        title="Query Type"
+                                        {...field}
+                                        style={{
+                                            width: '100%',
+                                            marginBottom: '25px',
+                                        }}
+                                        placeholder="Please select Query type"
+                                        // onChange={(data)=>{console.log("QWeqw")}}
+                                        options={[
+                                            {
+                                                label: 'Filter Query',
+                                                value: 'filter_query',
+                                            },
+                                            {
+                                                label: 'Raw Query',
+                                                value: 'raw_query',
+                                            },
+                                        ]}
+                                    />
+                                )}
                             />
-                        )}
-                    />
-                    <div
-                        className={`${watchField.query_type === 'filter_query' ? 'd-block' : 'd-none'}`}
-                    >
-                        <h1 className="font-semibold text-lg">Filter Record</h1>
-                        <div className="grid md:gap-3  items-end">
-                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 d-flex ">
-                                <div className="form-group">
-                                    <label className="font-bold">Search Type</label>
-
-                                    <Controller
-                                        control={control}
-                                        name="search_type"
-                                        {...register('search_type')}
-                                        defaultValue={_search_type || 'Exact Phrase'}
-                                        render={({ field }) => (
-                                            <Select
-                                                title="Search Type"
-                                                {...field}
-                                                style={{
-                                                    width: '100%',
-                                                    marginBottom: '25px',
-                                                    padding: '5px',
-                                                }}
-                                                placeholder="Please select search type"
-                                                options={[
-                                                    // {
-                                                    //   label: 'Any Word',
-                                                    //   value: 'Any Word'
-                                                    // },
-                                                    {
-                                                        label: 'Exact Phrase',
-                                                        value: 'Exact Phrase',
-                                                    },
-                                                    {
-                                                        label: 'Relevant Word',
-                                                        value: 'Relevant Word',
-                                                    },
-                                                ]}
+                            <div
+                                className={`${
+                                    watchField.query_type === 'filter_query'
+                                        ? 'd-block'
+                                        : 'd-none'
+                                }`}
+                            >
+                                <h1 className="font-semibold text-lg pb-2">
+                                    Filter Record
+                                </h1>
+                                <div className="grid md:gap-3  items-end">
+                                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 d-flex ">
+                                        <div className="form-group">
+                                            <label className="font-bold">
+                                                Search Type
+                                            </label>
+                                            <Controller
+                                                control={control}
+                                                name="search_type"
+                                                {...register('search_type')}
+                                                defaultValue={
+                                                    _search_type || 'Exact Phrase'
+                                                }
+                                                render={({ field }) => (
+                                                    <Select
+                                                        title="Search Type"
+                                                        {...field}
+                                                        style={{
+                                                            width: '100%',
+                                                        }}
+                                                        placeholder="Please select search type"
+                                                        options={[
+                                                            // {
+                                                            //   label: 'Any Word',
+                                                            //   value: 'Any Word'
+                                                            // },
+                                                            {
+                                                                label: 'Exact Phrase',
+                                                                value: 'Exact Phrase',
+                                                            },
+                                                            {
+                                                                label: 'Relevant Word',
+                                                                value: 'Relevant Word',
+                                                            },
+                                                        ]}
+                                                    />
+                                                )}
                                             />
-                                        )}
-                                    />
-                                </div>
-                                <div className="form-group mb-6">
-                                    <label className="font-bold">Search</label>
-                                    {/* <span className='text-red-600 md:ml-4'>{errors?.keywords?.message}</span> */}
-                                    <input
-                                        type="text"
-                                        className={inputClass}
-                                        name="keywords"
-                                        {...register('keywords')}
-                                        aria-describedby="keywords"
-                                        placeholder="search"
-                                        defaultValue={_keyword}
-                                    />
-                                </div>
-                                <div className="form-group mb-6">
-                                    <label className="font-bold">Exclude Words</label>
-                                    {/* <span className='text-red-600 md:ml-4'>{errors?.keywords?.message}</span> */}
-                                    <input
-                                        type="text"
-                                        className={inputClass}
-                                        name="exclude_words"
-                                        {...register('exclude_words')}
-                                        aria-describedby="exclude_keywords"
-                                        placeholder="Exclude Word"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid md:grid-cols-2 lg:grid-cols-3 md:gap-3">
-                                <Controller
-                                    control={control}
-                                    name="cpv_codes"
-                                    {...register('cpv_codes')}
-                                    render={({ field }) => (
-                                        <Select
-                                            title="Cpv Codes"
-                                            {...field}
-                                            // defaultValue={_cpv_codes}
-                                            mode="multiple"
-                                            allowClear
-                                            style={{
-                                                width: '100%',
-                                                marginBottom: '25px',
-                                                padding: '5px',
-                                            }}
-                                            placeholder="Please select cpv code"
-                                            onDeselect={(val) =>
-                                                OnResetFilter('cpv_codes')
-                                            }
-                                            onChange={(value) => {
-                                                setValue('cpv_codes', value);
-                                                OnResetFilter('cpv_codes');
-                                            }}
-                                            onSearch={(value) =>
-                                                OnChangeFilter('cpv_codes', value)
-                                            }
-                                            options={cpv_codes}
-                                        />
-                                    )}
-                                />
-                                <Controller
-                                    control={control}
-                                    name="sectors"
-                                    {...register('sectors')}
-                                    render={({ field }) => (
-                                        <Select
-                                            {...field}
-                                            title="Sectors"
-                                            defaultValue={_sectors}
-                                            mode="multiple"
-                                            allowClear
-                                            style={{
-                                                width: '100%',
-                                                marginBottom: '25px',
-                                                padding: '5px',
-                                            }}
-                                            placeholder="Please select sectors"
-                                            onDeselect={(val) => OnResetFilter('sectors')}
-                                            onChange={(value) => {
-                                                setValue('sectors', value);
-                                                OnResetFilter('sectors');
-                                            }}
-                                            onSearch={(value) =>
-                                                OnChangeFilter('sectors', value)
-                                            }
-                                            options={sectors}
-                                        />
-                                    )}
-                                />
-
-                                <Controller
-                                    control={control}
-                                    name="regions"
-                                    {...register('regions')}
-                                    render={({ field }) => (
-                                        <Select
-                                            {...field}
-                                            title="Regions"
-                                            mode="multiple"
-                                            allowClear
-                                            style={{
-                                                width: '100%',
-                                                marginBottom: '25px',
-                                                padding: '5px',
-                                            }}
-                                            placeholder="Please select regions"
-                                            onDeselect={(val) => OnResetFilter('regions')}
-                                            onChange={(value) => {
-                                                setValue('regions', value);
-                                                OnResetFilter('regions');
-                                            }}
-                                            onSearch={(value) =>
-                                                OnChangeFilter('regions', value)
-                                            }
-                                            options={regions}
-                                        />
-                                    )}
-                                />
-                                <Controller
-                                    control={control}
-                                    name="funding_agency"
-                                    {...register('funding_agency')}
-                                    render={({ field }) => (
-                                        <Select
-                                            {...field}
-                                            title="Funding Agency"
-                                            mode="multiple"
-                                            allowClear
-                                            style={{
-                                                width: '100%',
-                                                marginBottom: '25px',
-                                                padding: '5px',
-                                            }}
-                                            placeholder="Please select funding_agency"
-                                            onDeselect={(val) =>
-                                                OnResetFilter('funding_agency')
-                                            }
-                                            onChange={(value) => {
-                                                setValue('funding_agency', value);
-                                                OnResetFilter('funding_agency');
-                                            }}
-                                            onSearch={(value) =>
-                                                OnChangeFilter('funding_agency', value)
-                                            }
-                                            options={funding}
-                                        />
-                                    )}
-                                />
-                                <Controller
-                                    control={control}
-                                    name="country"
-                                    {...register('country')}
-                                    render={({ field }) => (
-                                        <Select
-                                            {...field}
-                                            title="Country"
-                                            mode="multiple"
-                                            allowClear
-                                            style={{
-                                                width: '100%',
-                                                marginBottom: '25px',
-                                                padding: '5px',
-                                            }}
-                                            placeholder="Please select country"
-                                            onDeselect={(val) => OnResetFilter('country')}
-                                            onChange={(value) => {
-                                                setValue('country', value);
-                                                OnResetFilter('country');
-                                            }}
-                                            onSearch={(value) =>
-                                                OnChangeFilter('country', value)
-                                            }
-                                            options={countries}
-                                        />
-                                    )}
-                                />
-                            </div>
-
-                            <div className="grid md:grid-cols-2 gap-3">
-                                <RangePicker
-                                    // showTime={{
-                                    //   format: 'YYYY-MM-DD',
-                                    // }}
-                                    // format="YYYY-MM-DD"
-                                    value={
-                                        watchField.from_date && watchField.to_date
-                                            ? [
-                                                  moment(
-                                                      watchField.from_date,
-                                                      'YYYY-MM-DD',
-                                                  ),
-                                                  moment(
-                                                      watchField.to_date,
-                                                      'YYYY-MM-DD',
-                                                  ),
-                                              ]
-                                            : null
-                                    }
-                                    style={{
-                                        width: '100%',
-                                        marginBottom: '25px',
-                                        padding: '5px',
-                                    }}
-                                    // onOk={handleDateRange}
-                                    onChange={handleDateRange}
-                                />
-
-                                <div className="form-group mb-6">
-                                    <input
-                                        type="submit"
-                                        className={`${inputClass} hover:ring-1 focus:ring-1 hover:text-blue-400 focus:text-blue-400 cursor-pointer`}
-                                        value={'Filter'}
-                                    />
-                                </div>
-                            </div>
-                            <div className="grid md:grid-cols-1 lg:grid-cols-1 gap-3 d-flex ">
-                                {query ? (
-                                    <>
-                                        <div className="form-group ">
-                                            <label className="font-bold">Raw Query</label>
+                                        </div>
+                                        <div className="form-group mb-6">
+                                            <label className="font-bold">Keywords</label>
+                                            <input
+                                                type="text"
+                                                className={inputClass}
+                                                name="keywords"
+                                                {...register('keywords')}
+                                                aria-describedby="keywords"
+                                                placeholder="Keywords"
+                                            />
+                                        </div>
+                                        <div className="form-group mb-6">
+                                            <label className="font-bold">
+                                                Exclude Words
+                                            </label>
                                             {/* <span className='text-red-600 md:ml-4'>{errors?.keywords?.message}</span> */}
-                                            <textarea
+                                            <input
+                                                type="text"
+                                                className={inputClass}
+                                                name="exclude_words"
+                                                {...register('exclude_words')}
+                                                aria-describedby="exclude_keywords"
+                                                placeholder="Exclude Word"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid md:grid-cols-2 lg:grid-cols-3 md:gap-3">
+                                        <Controller
+                                            control={control}
+                                            name="cpv_codes"
+                                            {...register('cpv_codes')}
+                                            render={({ field }) => (
+                                                <div className="form-group">
+                                                    <label className="font-bold">
+                                                        Cpv Codes
+                                                    </label>
+                                                    <Select
+                                                        title="Cpv Codes"
+                                                        {...field}
+                                                        // defaultValue={_cpv_codes}
+                                                        mode="multiple"
+                                                        allowClear
+                                                        style={{
+                                                            width: '100%',
+                                                            marginBottom: '25px',
+                                                        }}
+                                                        placeholder="Please select cpv code"
+                                                        // onDeselect={(val) =>
+                                                        //     OnResetFilter('cpv_codes')
+                                                        // }
+                                                        onChange={(value) => {
+                                                            setValue('cpv_codes', value);
+                                                            // OnResetFilter('cpv_codes');
+                                                        }}
+                                                        onSearch={(value) =>
+                                                            OnChangeFilter(
+                                                                'cpv_codes',
+                                                                value,
+                                                            )
+                                                        }
+                                                        options={cpv_codes}
+                                                    />
+                                                </div>
+                                            )}
+                                        />
+                                        <Controller
+                                            control={control}
+                                            name="sectors"
+                                            {...register('sectors')}
+                                            render={({ field }) => (
+                                                <div className="form-group">
+                                                    <label className="font-bold">
+                                                        Sectors
+                                                    </label>
+                                                    <Select
+                                                        {...field}
+                                                        title="Sectors"
+                                                        defaultValue={_sectors}
+                                                        mode="multiple"
+                                                        allowClear
+                                                        style={{
+                                                            width: '100%',
+                                                            marginBottom: '25px',
+                                                        }}
+                                                        placeholder="Please select sectors"
+                                                        onDeselect={(val) =>
+                                                            OnResetFilter('sectors')
+                                                        }
+                                                        onChange={(value) => {
+                                                            setValue('sectors', value);
+                                                            OnResetFilter('sectors');
+                                                        }}
+                                                        onSearch={(value) =>
+                                                            OnChangeFilter(
+                                                                'sectors',
+                                                                value,
+                                                            )
+                                                        }
+                                                        options={sectors}
+                                                    />
+                                                </div>
+                                            )}
+                                        />
+
+                                        <Controller
+                                            control={control}
+                                            name="regions"
+                                            {...register('regions')}
+                                            render={({ field }) => (
+                                                <div className="form-group">
+                                                    <label className="font-bold">
+                                                        Regions
+                                                    </label>
+                                                    <Select
+                                                        {...field}
+                                                        title="Regions"
+                                                        mode="multiple"
+                                                        allowClear
+                                                        style={{
+                                                            width: '100%',
+                                                            marginBottom: '25px',
+                                                        }}
+                                                        placeholder="Please select regions"
+                                                        onDeselect={(val) =>
+                                                            OnResetFilter('regions')
+                                                        }
+                                                        onChange={(value) => {
+                                                            setValue('regions', value);
+                                                            OnResetFilter('regions');
+                                                        }}
+                                                        onSearch={(value) =>
+                                                            OnChangeFilter(
+                                                                'regions',
+                                                                value,
+                                                            )
+                                                        }
+                                                        options={regions}
+                                                    />
+                                                </div>
+                                            )}
+                                        />
+                                        <Controller
+                                            control={control}
+                                            name="funding_agency"
+                                            {...register('funding_agency')}
+                                            render={({ field }) => (
+                                                <div className="form-group">
+                                                    <label className="font-bold">
+                                                        Funding Agency
+                                                    </label>
+                                                    <Select
+                                                        {...field}
+                                                        title="Funding Agency"
+                                                        mode="multiple"
+                                                        allowClear
+                                                        style={{
+                                                            width: '100%',
+                                                            marginBottom: '25px',
+                                                        }}
+                                                        placeholder="Please select funding_agency"
+                                                        onDeselect={(val) =>
+                                                            OnResetFilter(
+                                                                'funding_agency',
+                                                            )
+                                                        }
+                                                        onChange={(value) => {
+                                                            setValue(
+                                                                'funding_agency',
+                                                                value,
+                                                            );
+                                                            OnResetFilter(
+                                                                'funding_agency',
+                                                            );
+                                                        }}
+                                                        onSearch={(value) =>
+                                                            OnChangeFilter(
+                                                                'funding_agency',
+                                                                value,
+                                                            )
+                                                        }
+                                                        options={funding}
+                                                    />
+                                                </div>
+                                            )}
+                                        />
+                                        <Controller
+                                            control={control}
+                                            name="country"
+                                            {...register('country')}
+                                            render={({ field }) => (
+                                                <div className="form-group">
+                                                    <label className="font-bold">
+                                                        Country
+                                                    </label>
+                                                    <Select
+                                                        {...field}
+                                                        title="Country"
+                                                        mode="multiple"
+                                                        allowClear
+                                                        style={{
+                                                            width: '100%',
+                                                            marginBottom: '25px',
+                                                        }}
+                                                        placeholder="Please select country"
+                                                        onDeselect={(val) =>
+                                                            OnResetFilter('country')
+                                                        }
+                                                        onChange={(value) => {
+                                                            setValue('country', value);
+                                                            OnResetFilter('country');
+                                                        }}
+                                                        onSearch={(value) =>
+                                                            OnChangeFilter(
+                                                                'country',
+                                                                value,
+                                                            )
+                                                        }
+                                                        options={countries}
+                                                    />
+                                                </div>
+                                            )}
+                                        />
+
+                                        <div className="form-group">
+                                            <label className="font-bold">
+                                                Valid Period
+                                            </label>
+                                            {rangePickerValue}
+                                        </div>
+
+                                        <div className="form-group mb-6">
+                                            <label className="font-bold">Limits</label>
+                                            <input
+                                                type="text"
+                                                className={inputClass}
+                                                name="limits"
+                                                {...register('limits')}
+                                                aria-describedby="limits"
+                                                placeholder="Enter limits"
+                                                defaultValue={_limits}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid md:grid-cols-1 lg:grid-cols-1 gap-3 d-flex ">
+                                        <div className="form-group mb-6">
+                                            <input
+                                                type="submit"
+                                                className={`${inputClass} hover:ring-1 focus:ring-1 hover:text-blue-400 focus:text-blue-400 cursor-pointer`}
+                                                value={'Filter'}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid md:grid-cols-1 lg:grid-cols-1 gap-3 d-flex ">
+                                        {query ? (
+                                            <>
+                                                <div className="form-group ">
+                                                    <label className="font-bold">
+                                                        Raw Query
+                                                    </label>
+                                                    {/* <span className='text-red-600 md:ml-4'>{errors?.keywords?.message}</span> */}
+                                                    {/* <textarea
                                                 type="text"
                                                 className={inputClass}
                                                 value={query}
                                                 aria-describedby="exclude_keywords"
                                                 placeholder="Raw Query"
+                                            /> */}
+                                                    <div className="border p-2 bg-gray-100 rounded-md overflow-auto max-h-60">
+                                                        <pre className="whitespace-pre-wrap break-words text-sm">
+                                                            {query}
+                                                        </pre>
+                                                    </div>
+                                                </div>
+                                                <div className="form-group mb-6">
+                                                    <div
+                                                        className={`${inputClass} hover:ring-1 focus:ring-1 hover:text-blue-400 focus:text-blue-400 cursor-pointer`}
+                                                        style={{ textAlign: 'center' }}
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(
+                                                                query,
+                                                            );
+                                                            toast.success('copied');
+                                                        }}
+                                                    >
+                                                        Copy Query
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            ''
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div
+                                className={`${
+                                    watchField.query_type === 'raw_query'
+                                        ? 'd-block'
+                                        : 'd-none'
+                                }`}
+                            >
+                                <h1 className="font-semibold text-lg">Raw query</h1>
+                                <div className="grid md:gap-3  items-end">
+                                    <div className="grid md:grid-cols-1 lg:grid-cols-1 gap-3 d-flex ">
+                                        <div className="form-group ">
+                                            {/* <label className="font-bold">Raw Query</label> */}
+                                            {/* <span className='text-red-600 md:ml-4'>{errors?.keywords?.message}</span> */}
+                                            <textarea
+                                                type="text"
+                                                className={inputClass}
+                                                {...register('raw_query')}
+                                                required={
+                                                    watchField.query_type === 'raw_query'
+                                                }
+                                                aria-describedby="exclude_keywords"
+                                                placeholder="Raw Query"
                                             />
                                         </div>
-                                        <div className="form-group mb-6">
-                                            <div
-                                                className={`${inputClass} hover:ring-1 focus:ring-1 hover:text-blue-400 focus:text-blue-400 cursor-pointer`}
-                                                style={{ textAlign: 'center' }}
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(query);
-                                                    toast.success('copied');
-                                                }}
-                                            >
-                                                Copy Query
-                                            </div>
-                                        </div>
-                                    </>
-                                ) : (
-                                    ''
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                    <div
-                        className={`${watchField.query_type === 'raw_query' ? 'd-block' : 'd-none'}`}
-                    >
-                        <h1 className="font-semibold text-lg">Raw query</h1>
-                        <div className="grid md:gap-3  items-end">
-                            <div className="grid md:grid-cols-1 lg:grid-cols-1 gap-3 d-flex ">
-                                <div className="form-group ">
-                                    {/* <label className="font-bold">Raw Query</label> */}
-                                    {/* <span className='text-red-600 md:ml-4'>{errors?.keywords?.message}</span> */}
-                                    <textarea
-                                        type="text"
-                                        className={inputClass}
-                                        {...register('raw_query')}
-                                        required={watchField.query_type === 'raw_query'}
-                                        aria-describedby="exclude_keywords"
-                                        placeholder="Raw Query"
-                                    />
-                                </div>
 
-                                <div className="form-group mb-6">
-                                    <input
-                                        type="submit"
-                                        className={`${inputClass} hover:ring-1 focus:ring-1 hover:text-blue-400 focus:text-blue-400 cursor-pointer`}
-                                        value={'Filter'}
-                                    />
+                                        <div className="form-group mb-6">
+                                            <input
+                                                type="submit"
+                                                className={`${inputClass} hover:ring-1 focus:ring-1 hover:text-blue-400 focus:text-blue-400 cursor-pointer`}
+                                                value={'Filter'}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                            <div></div>
+                        </form>
                     </div>
-                    <div></div>
-                </form>
-            </div>
+                </Collapse.Panel>
+            </Collapse>
             {watchField.data_type === 'tender' && (
                 <Table
                     loading={Tender.loading}
@@ -1726,8 +1848,7 @@ export default function ActivationPanel({ props }) {
                     }}
                     dataSource={Tender.records}
                     columns={tenderColumns}
-                    // pagination={{ sort: { name: -1 }, defaultPageSize: 5, showSizeChanger: true, pageSizeOptions: ['5', '10', '20', '30']}}
-                    scroll={{ y: 430 }}
+                    scroll={{ y: '60vh' }}
                     onChange={onChange_table}
                 />
             )}

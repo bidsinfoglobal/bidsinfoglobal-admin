@@ -18,6 +18,7 @@ import { fetchRegion } from '../../apis/master/region.api';
 import { fetchCPVCode } from '../../apis/master/cpvcode.api';
 import { userRoles } from '../../utils/roles';
 import { useCookies } from 'react-cookie';
+import DebouncedSearch from '../Common/DebouncedSearch';
 
 const inputClass = `form-control
 block
@@ -111,6 +112,27 @@ export default function Tender() {
         } catch (err) {
             alert(err.message);
         }
+    };
+
+    const handleSearch = (keywords) => {
+        dispatch(
+            changeTenderParameter({
+                pageNo: 0,
+                limit: pagination.pageSize,
+                sortBy: pagination.sort[Object.keys(pagination.sort)[0]],
+                sortField: Object.keys(pagination.sort)[0],
+                keywords: keywords,
+            }),
+        );
+        dispatch(
+            fetchTenderRecords({
+                pageNo: pagination.current - 1,
+                limit: pagination.pageSize,
+                sortBy: pagination.sort[Object.keys(pagination.sort)[0]],
+                sortField: Object.keys(pagination.sort)[0],
+                keywords: keywords,
+            }),
+        );
     };
 
     const onChange_table = (paginate, filter, sorter, extra) => {
@@ -354,8 +376,13 @@ export default function Tender() {
         <div>
             <div className="flex items-center justify-between mb-4">
                 <h1 className="text-xl">Tender</h1>
-                {/* <input className={`${inputClass} w-1/2`} onChange={(e) => console.log(e.target.value)} placeholder='Search' /> */}
-                <ManagerModel submitHandler={handleTenderSubmit} />
+                <div className="flex gap-2 ml-auto ">
+                    <DebouncedSearch
+                        onSearch={handleSearch}
+                        placeholder="Search Customers..."
+                    />
+                    <ManagerModel submitHandler={handleTenderSubmit} />
+                </div>
             </div>
             <Table
                 loading={Tender.loading}
@@ -584,7 +611,7 @@ function ManagerModel({ id, _tender, submitHandler }) {
                 cookies.role,
             ) && (
                 <Button
-                    className={!id ? 'float-right mb-2' : ''}
+                    className={!id ? 'float-right' : ''}
                     title={id ? 'Edit' : 'Add'}
                     icon={id ? <EditFilled /> : <PlusOutlined />}
                     onClick={() => setOpen(true)}
