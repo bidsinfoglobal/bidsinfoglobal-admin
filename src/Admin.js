@@ -32,7 +32,6 @@ export default function Admin() {
         ...generateBreadCrumb(location.pathname),
     ]);
     const [cookies, setCookie, removeCookie] = useCookies(['token', 'role']);
-    // const [role_cookie] = useCookies(['role']);
 
     const [defaultPath, setDefaultPath] = useState(1);
     const [collapsed, setCollapsed] = useState(false);
@@ -173,8 +172,8 @@ export default function Admin() {
                                                 (cookies.role === userRoles.SUPER_ADMIN
                                                     ? true
                                                     : Array.isArray(access)
-                                                      ? access.includes(cookies.role)
-                                                      : false),
+                                                    ? access.includes(cookies.role)
+                                                    : false),
                                         )
                                         .map(
                                             ({
@@ -263,8 +262,8 @@ export default function Admin() {
                                             cookies.role === userRoles.SUPER_ADMIN
                                                 ? true
                                                 : Array.isArray(access)
-                                                  ? access.includes(cookies.role)
-                                                  : false,
+                                                ? access.includes(cookies.role)
+                                                : false,
                                         )
                                         .map(({ path, element, children }) => (
                                             <>
